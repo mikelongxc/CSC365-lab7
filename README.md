@@ -1,5 +1,5 @@
 # CSC365-lab7
 
-Team:
-Michael Long (mjlong@calpoly.edu)
-Henry Pigg (hpigg@calpoly.edu)
+Team: <br />
+Michael Long (mjlong@calpoly.edu) <br />
+Henry Pigg (hpigg@calpoly.edu) <br />
