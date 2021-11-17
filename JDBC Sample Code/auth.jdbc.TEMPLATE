@@ -1,3 +1,0 @@
-export HP_JDBC_URL=jdbc:mysql://db.labthreesixfive.com/mjlong?autoReconnect=false\&useSSL=false
-export HP_JDBC_USER=mjlong
-export HP_JDBC_PW=csc365-F2021_013777227
