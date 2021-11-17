@@ -53,6 +53,13 @@ public class InnReservations {
         }
     }
 
+    private void rooms_and_rates() throws SQLException {
+
+		System.out.println("demo1: Add AvailUntil column to hp_goods table\r\n");
+
+
+	}
+
     // Demo1 - Establish JDBC connection, execute DDL statement
     private void demo1() throws SQLException {
 
