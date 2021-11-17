@@ -5,9 +5,7 @@ import java.sql.SQLException;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 
-import java.util.Map;
 import java.util.Scanner;
-import java.util.LinkedHashMap;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.ArrayList;
@@ -29,15 +27,18 @@ grant all on mjlong.hp_receipts to hasty@'%';
 
 -- Shell init:
 export CLASSPATH=$CLASSPATH:mysql-connector-java-8.0.16.jar:.
-export HP_JDBC_URL=jdbc:mysql://db.labthreesixfive.com/mjlong?autoReconnect=true\&useSSL=false
+export HP_JDBC_URL=jdbc:mysql://db.labthreesixfive.com/fall2021?autoReconnect=true\&useSSL=false
 export HP_JDBC_USER=mjlong
 export HP_JDBC_PW=csc365-F2021_013777227
 
+mysql --host=somesite.com --port=3306 --enable-cleartext-plugin --user=username --password=password
+
+
  */
-public class HastyPastry {
+public class InnReservations {
     public static void main(String[] args) {
 	try {
-	    HastyPastry hp = new HastyPastry();
+	    InnReservations hp = new InnReservations();
             int demoNum = Integer.parseInt(args[0]);
             
             switch (demoNum) {
@@ -71,8 +72,6 @@ public class HastyPastry {
 	}
 
 	// Step 1: Establish connection to RDBMS
-
-		DriverManager.setLoginTimeout(10);
 	try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
 							   System.getenv("HP_JDBC_USER"),
 							   System.getenv("HP_JDBC_PW"))) {
@@ -92,7 +91,7 @@ public class HastyPastry {
 
 	    // Step 6: (omitted in this example) Commit or rollback transaction
 	}
-	catch (Exception e) {
+	catch (Exception e){
 		System.err.println(e);
 	}
 	// Step 7: Close connection (handled by try-with-resources syntax)
