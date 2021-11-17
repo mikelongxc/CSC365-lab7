@@ -29,10 +29,7 @@ grant all on mjlong.hp_receipts to hasty@'%';
 export CLASSPATH=$CLASSPATH:mysql-connector-java-8.0.16.jar:.
 export HP_JDBC_URL=jdbc:mysql://db.labthreesixfive.com/fall2021?autoReconnect=true\&useSSL=false
 export HP_JDBC_USER=mjlong
-export HP_JDBC_PW=csc365-F2021_013777227
-
-mysql --host=somesite.com --port=3306 --enable-cleartext-plugin --user=username --password=password
-
+export HP_JDBC_PW=csc365-F2021_emplId
 
  */
 public class InnReservations {
