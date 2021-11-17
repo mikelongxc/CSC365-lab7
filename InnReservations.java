@@ -27,23 +27,23 @@ grant all on mjlong.hp_receipts to hasty@'%';
 
 -- Shell init:
 export CLASSPATH=$CLASSPATH:mysql-connector-java-8.0.16.jar:.
-export HP_JDBC_URL=jdbc:mysql://db.labthreesixfive.com/fall2021?autoReconnect=true\&useSSL=false
+export HP_JDBC_URL=jdbc:mysql://db.labthreesixfive.com/mjlong?autoReconnect=true\&useSSL=false
 export HP_JDBC_USER=mjlong
-export HP_JDBC_PW=csc365-F2021_emplId
+export HP_JDBC_PW=csc365-F2021_013777227
 
  */
 public class InnReservations {
     public static void main(String[] args) {
 	try {
-	    InnReservations hp = new InnReservations();
+	    InnReservations ir = new InnReservations();
             int demoNum = Integer.parseInt(args[0]);
-            
+
             switch (demoNum) {
-            case 1: hp.demo1(); break;
-            case 2: hp.demo2(); break;
-            case 3: hp.demo3(); break;
-            case 4: hp.demo4(); break;
-            case 5: hp.demo5(); break;
+            case 1: ir.rooms_and_rates(); break;
+            case 2: ir.demo2(); break;
+            case 3: ir.demo3(); break;
+            case 4: ir.demo4(); break;
+            case 5: ir.demo5(); break;
             }
             
 	} catch (SQLException e) {
@@ -53,9 +53,49 @@ public class InnReservations {
         }
     }
 
+    private static void init_connection() throws SQLException {
+
+		try{
+			Class.forName("com.mysql.jdbc.Driver");
+			System.out.println("MySQL JDBC Driver loaded");
+		} catch (ClassNotFoundException ex) {
+			System.err.println("Unable to load JDBC Driver");
+			System.exit(-1);
+		}
+
+	}
+
     private void rooms_and_rates() throws SQLException {
 
-		System.out.println("demo1: Add AvailUntil column to hp_goods table\r\n");
+		System.out.println("FR1: Rooms and rates\r\n");
+
+		init_connection();
+
+
+		// Step 1: Establish connection to RDBMS
+		try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
+				System.getenv("HP_JDBC_USER"),
+				System.getenv("HP_JDBC_PW"))) {
+			// Step 2: Construct SQL statement
+				String sql = "SELECT * FROM mjlong.lab7_rooms";
+
+
+				String q3 = "with RoomPopularity AS ( SELECT Room, ROUND(SUM( CASE WHEN CheckIn >= DATE_ADD(CURDATE(), INTERVAL -180 DAY) AND CheckOut <= CURDATE() THEN DATEDIFF(CheckOut, CheckIn) WHEN CheckIn >= DATE_ADD(CURDATE(), INTERVAL -180 DAY) AND CheckOut > CURDATE() THEN DATEDIFF(CURDATE() , CheckIn) WHEN CheckIn < DATE_ADD(CURDATE(), INTERVAL -180 DAY) AND CheckOut <= CURDATE() THEN DATEDIFF(CheckOut, DATE_ADD(CURDATE(), INTERVAL -180 DAY)) ELSE 365 END)/180,2) AS occ_score FROM lab7_reservations WHERE (CheckOut >= DATE_ADD(CURDATE(), INTERVAL -180 DAY) AND CheckIn <= CURDATE() ) OR (CheckOut > CURDATE() AND CheckIn <= CURDATE() ) GROUP BY Room ORDER BY occ_score DESC ), nextAvailCheckIn AS ( SELECT Room, GREATEST(CURDATE(), MAX(CheckOut)) AS nextAvailableCheckIn FROM lab7_reservations GROUP BY Room ), MostRecentStay AS ( SELECT min_res.Room, DATEDIFF(CheckOut, CheckIn) AS Duration, CheckOut FROM ( SELECT Room, MIN(dt) AS mindt FROM ( SELECT Room, CheckIn, CheckOut, DATEDIFF(CURDATE(), Checkout) as dt FROM lab7_reservations WHERE DATEDIFF(CURDATE(), Checkout) > 0 ) recent_res GROUP BY Room ) min_res JOIN ( SELECT Room, CheckIn, CheckOut, DATEDIFF(CURDATE(), Checkout) as dt FROM lab7_reservations WHERE DATEDIFF(CURDATE(), Checkout) > 0 ) recent_res ON min_res.mindt = recent_res.dt AND recent_res.room = min_res.room ) SELECT rm.RoomCode, rm.RoomName, rm.Beds, rm.bedType, rm.maxOcc, rm.basePrice, rm.decor, occ_score, nextAvailableCheckIn, Duration, CheckOut FROM RoomPopularity AS rp JOIN nextAvailCheckIn AS nc ON rp.Room = nc.Room JOIN MostRecentStay AS mr ON mr.Room = rp.Room JOIN lab7_rooms AS rm ON RoomCode = mr.Room ORDER BY occ_score DESC"
+			// Step 3: (omitted in this example) Start transaction
+
+			try (Statement stmt = conn.createStatement();
+				 ResultSet rs = stmt.executeQuery(sql)) {
+
+				// Step 5: Receive results
+				while (rs.next()) {
+					String flavor = rs.getString("Flavor");
+					String food = rs.getString("Food");
+					float price = rs.getFloat("price");
+					System.out.format("%s %s ($%.2f) %n", flavor, food, price);
+				}
+
+			// Step 6: (omitted in this example) Commit or rollback transaction
+		}
 
 
 	}
