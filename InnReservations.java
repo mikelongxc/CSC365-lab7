@@ -27,9 +27,9 @@ grant all on mjlong.hp_receipts to hasty@'%';
 
 -- Shell init:
 export CLASSPATH=$CLASSPATH:mysql-connector-java-8.0.16.jar:.
-export HP_JDBC_URL=jdbc:mysql://db.labthreesixfive.com/mjlong?autoReconnect=true\&useSSL=false
-export HP_JDBC_USER=mjlong
-export HP_JDBC_PW=csc365-F2021_013777227
+export HP_JDBC_URL=jdbc:mysql://db.labthreesixfive.com/hpigg?autoReconnect=true\&useSSL=false
+export HP_JDBC_USER=hpigg
+export HP_JDBC_PW=csc365-F2021_025362993
 
  */
 public class InnReservations {
@@ -40,7 +40,7 @@ public class InnReservations {
 
             switch (demoNum) {
             case 1: ir.rooms_and_rates(); break;
-            case 2: ir.demo2(); break;
+            case 2: ir.reservations(); break;
             case 3: ir.demo3(); break;
             case 4: ir.demo4(); break;
             case 5: ir.demo5(); break;
@@ -56,7 +56,7 @@ public class InnReservations {
     private static void init_connection() throws SQLException {
 
 		try{
-			Class.forName("com.mysql.jdbc.Driver");
+			Class.forName("com.mysql.cj.jdbc.Driver");
 			System.out.println("MySQL JDBC Driver loaded");
 		} catch (ClassNotFoundException ex) {
 			System.err.println("Unable to load JDBC Driver");
@@ -80,7 +80,7 @@ public class InnReservations {
 				String sql = "SELECT * FROM mjlong.lab7_rooms";
 
 
-				String q3 = "with RoomPopularity AS ( SELECT Room, ROUND(SUM( CASE WHEN CheckIn >= DATE_ADD(CURDATE(), INTERVAL -180 DAY) AND CheckOut <= CURDATE() THEN DATEDIFF(CheckOut, CheckIn) WHEN CheckIn >= DATE_ADD(CURDATE(), INTERVAL -180 DAY) AND CheckOut > CURDATE() THEN DATEDIFF(CURDATE() , CheckIn) WHEN CheckIn < DATE_ADD(CURDATE(), INTERVAL -180 DAY) AND CheckOut <= CURDATE() THEN DATEDIFF(CheckOut, DATE_ADD(CURDATE(), INTERVAL -180 DAY)) ELSE 365 END)/180,2) AS occ_score FROM lab7_reservations WHERE (CheckOut >= DATE_ADD(CURDATE(), INTERVAL -180 DAY) AND CheckIn <= CURDATE() ) OR (CheckOut > CURDATE() AND CheckIn <= CURDATE() ) GROUP BY Room ORDER BY occ_score DESC ), nextAvailCheckIn AS ( SELECT Room, GREATEST(CURDATE(), MAX(CheckOut)) AS nextAvailableCheckIn FROM lab7_reservations GROUP BY Room ), MostRecentStay AS ( SELECT min_res.Room, DATEDIFF(CheckOut, CheckIn) AS Duration, CheckOut FROM ( SELECT Room, MIN(dt) AS mindt FROM ( SELECT Room, CheckIn, CheckOut, DATEDIFF(CURDATE(), Checkout) as dt FROM lab7_reservations WHERE DATEDIFF(CURDATE(), Checkout) > 0 ) recent_res GROUP BY Room ) min_res JOIN ( SELECT Room, CheckIn, CheckOut, DATEDIFF(CURDATE(), Checkout) as dt FROM lab7_reservations WHERE DATEDIFF(CURDATE(), Checkout) > 0 ) recent_res ON min_res.mindt = recent_res.dt AND recent_res.room = min_res.room ) SELECT rm.RoomCode, rm.RoomName, rm.Beds, rm.bedType, rm.maxOcc, rm.basePrice, rm.decor, occ_score, nextAvailableCheckIn, Duration, CheckOut FROM RoomPopularity AS rp JOIN nextAvailCheckIn AS nc ON rp.Room = nc.Room JOIN MostRecentStay AS mr ON mr.Room = rp.Room JOIN lab7_rooms AS rm ON RoomCode = mr.Room ORDER BY occ_score DESC"
+				String q3 = "with RoomPopularity AS ( SELECT Room, ROUND(SUM( CASE WHEN CheckIn >= DATE_ADD(CURDATE(), INTERVAL -180 DAY) AND CheckOut <= CURDATE() THEN DATEDIFF(CheckOut, CheckIn) WHEN CheckIn >= DATE_ADD(CURDATE(), INTERVAL -180 DAY) AND CheckOut > CURDATE() THEN DATEDIFF(CURDATE() , CheckIn) WHEN CheckIn < DATE_ADD(CURDATE(), INTERVAL -180 DAY) AND CheckOut <= CURDATE() THEN DATEDIFF(CheckOut, DATE_ADD(CURDATE(), INTERVAL -180 DAY)) ELSE 365 END)/180,2) AS occ_score FROM lab7_reservations WHERE (CheckOut >= DATE_ADD(CURDATE(), INTERVAL -180 DAY) AND CheckIn <= CURDATE() ) OR (CheckOut > CURDATE() AND CheckIn <= CURDATE() ) GROUP BY Room ORDER BY occ_score DESC ), nextAvailCheckIn AS ( SELECT Room, GREATEST(CURDATE(), MAX(CheckOut)) AS nextAvailableCheckIn FROM lab7_reservations GROUP BY Room ), MostRecentStay AS ( SELECT min_res.Room, DATEDIFF(CheckOut, CheckIn) AS Duration, CheckOut FROM ( SELECT Room, MIN(dt) AS mindt FROM ( SELECT Room, CheckIn, CheckOut, DATEDIFF(CURDATE(), Checkout) as dt FROM lab7_reservations WHERE DATEDIFF(CURDATE(), Checkout) > 0 ) recent_res GROUP BY Room ) min_res JOIN ( SELECT Room, CheckIn, CheckOut, DATEDIFF(CURDATE(), Checkout) as dt FROM lab7_reservations WHERE DATEDIFF(CURDATE(), Checkout) > 0 ) recent_res ON min_res.mindt = recent_res.dt AND recent_res.room = min_res.room ) SELECT rm.RoomCode, rm.RoomName, rm.Beds, rm.bedType, rm.maxOcc, rm.basePrice, rm.decor, occ_score, nextAvailableCheckIn, Duration, CheckOut FROM RoomPopularity AS rp JOIN nextAvailCheckIn AS nc ON rp.Room = nc.Room JOIN MostRecentStay AS mr ON mr.Room = rp.Room JOIN lab7_rooms AS rm ON RoomCode = mr.Room ORDER BY occ_score DESC";
 			// Step 3: (omitted in this example) Start transaction
 
 			try (Statement stmt = conn.createStatement();
@@ -93,11 +93,116 @@ public class InnReservations {
 					float price = rs.getFloat("price");
 					System.out.format("%s %s ($%.2f) %n", flavor, food, price);
 				}
+			}
 
 			// Step 6: (omitted in this example) Commit or rollback transaction
 		}
 
 
+	}
+
+	private void reservations() throws SQLException {
+    	System.out.println("FR2: Reservations\r\n");
+
+    	init_connection();
+
+		try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
+				System.getenv("HP_JDBC_USER"),
+				System.getenv("HP_JDBC_PW"))) {
+			// Get Query Params
+			Scanner scanner = new Scanner(System.in);
+			System.out.print("Enter your first name: ");
+			String firstName = scanner.nextLine();
+			System.out.print("Enter your last name: ");
+			String lastName = scanner.nextLine();
+			System.out.print("Enter desired room code (or 'Any'): ");
+			String roomCode = scanner.nextLine();
+			System.out.print("Enter desired bed type (or 'Any': ");
+			String bedType = scanner.nextLine();
+			System.out.print("When would you like to check in? (YYYY-MM-DD): ");
+			String checkIn = scanner.nextLine();
+			System.out.print("When would you like to check out? (YYYY-MM-DD): ");
+			String checkOut = scanner.nextLine();
+			System.out.print("How many children in your party? ");
+			int numChildren = Integer.parseInt(scanner.nextLine());
+			System.out.print("How many adults in your party? ");
+			int numAdults = Integer.parseInt(scanner.nextLine());
+
+			String availableRoomsQuery = (
+				"SELECT DISTINCT RoomCode, bedType, decor FROM mjlong.lab7_reservations Reservations " +
+				"JOIN mjlong.lab7_rooms Rooms ON Rooms.RoomCode = Reservations.Room " +
+				"WHERE (CheckIn > ? OR CheckOut < ?) AND ? + ? <= Rooms.maxOcc"
+			);
+
+			// Build query string
+			StringBuilder sb = new StringBuilder(availableRoomsQuery);
+
+			List<Object> params = new ArrayList<Object>();
+			params.add(checkIn);
+			params.add(checkOut);
+			params.add(numChildren);
+			params.add(numAdults);
+			if (!"any".equalsIgnoreCase(roomCode)) {
+				sb.append(" AND RoomCode = ?");
+				params.add(roomCode);
+			}
+			if (!"any".equalsIgnoreCase(bedType)) {
+				sb.append(" AND bedType = ?");
+				params.add(bedType);
+			}
+
+			// Execute Query
+			try (PreparedStatement pstmt = conn.prepareStatement(sb.toString())) {
+				int i = 1;
+				for (Object p : params) {
+					pstmt.setObject(i++, p);
+				}
+
+				try (ResultSet rs = pstmt.executeQuery()) {
+					System.out.format("%nAvailable Rooms:%n");
+					int matchCount = 0;
+					while (rs.next()) {
+						System.out.format(
+								"%s %s %s %n",
+								rs.getString("RoomCode"),
+								rs.getString("bedType"),
+								rs.getString("decor")
+						);
+						matchCount++;
+					}
+
+					if (matchCount == 0) {
+						PreparedStatement similarpstmt = conn.prepareStatement(
+								new StringBuilder(availableRoomsQuery).toString()
+						);
+						i = 1;
+						for (Object p : params) {
+							if (i < 5) {
+								similarpstmt.setObject(i++, p);
+							}
+						}
+
+						try(ResultSet similarrs = similarpstmt.executeQuery()) {
+							System.out.format("No exact matches found. Here are some similar available rooms:%n");
+							matchCount = 0;
+							while (similarrs.next()) {
+								System.out.format(
+										"%s %s %s %n",
+										similarrs.getString("RoomCode"),
+										similarrs.getString("bedType"),
+										similarrs.getString("decor")
+								);
+								matchCount++;
+							}
+						}
+					}
+
+					System.out.format("----------------------%nFound %d match%s %n", matchCount, matchCount == 1 ? "" : "es");
+				}
+			}
+
+			// Step 6: (omitted in this example) Commit or rollback transaction
+		}
 	}
 
     // Demo1 - Establish JDBC connection, execute DDL statement
@@ -278,7 +383,7 @@ public class InnReservations {
 
 	    List<Object> params = new ArrayList<Object>();
 	    params.add(price);
-	    StringBuilder sb = new StringBuilder("SELECT * FROM hp_goods WHERE price <= ?");
+	    StringBuilder sb = new StringBuilder("SELECT * FROM goods WHERE price <= ?");
 	    if (!"any".equalsIgnoreCase(flavor)) {
 		sb.append(" AND Flavor = ?");
 		params.add(flavor);
