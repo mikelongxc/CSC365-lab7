@@ -31,6 +31,11 @@ export HP_JDBC_URL=jdbc:mysql://db.labthreesixfive.com/hpigg?autoReconnect=true\
 export HP_JDBC_USER=hpigg
 export HP_JDBC_PW=csc365-F2021_025362993
 
+export CLASSPATH=$CLASSPATH:mysql-connector-java-8.0.16.jar:.
+export HP_JDBC_URL=jdbc:mysql://db.labthreesixfive.com/mjlong?autoReconnect=true\&useSSL=false
+export HP_JDBC_USER=mjlong
+export HP_JDBC_PW=csc365-F2021_013777227
+
  */
 public class InnReservations {
     public static void main(String[] args) {
@@ -42,7 +47,7 @@ public class InnReservations {
             case 1: ir.rooms_and_rates(); break;
             case 2: ir.reservations(); break;
             case 3: ir.demo3(); break;
-            case 4: ir.demo4(); break;
+            case 4: ir.cancel_reservation(); break;
             case 5: ir.demo5(); break;
             }
             
@@ -88,10 +93,18 @@ public class InnReservations {
 
 				// Step 5: Receive results
 				while (rs.next()) {
-					String flavor = rs.getString("Flavor");
-					String food = rs.getString("Food");
-					float price = rs.getFloat("price");
-					System.out.format("%s %s ($%.2f) %n", flavor, food, price);
+					String RoomCode = rs.getString("RoomCode");
+					String RoomName = rs.getString("RoomName");
+					int Beds = rs.getInt("Beds");
+					String bedType = rs.getString("bedType");
+					int maxOcc = rs.getInt("maxOcc");
+					int basePrice = rs.getInt("basePrice");
+					String decor = rs.getString("decor");
+					float occ_score = rs.getInt("occ_score"); // (.2%f)
+					String next_avail = rs.getString("nextAvailableCheckIn");
+					int Duration = rs.getInt("Duration");
+					String CheckOut = rs.getString("CheckOut");
+					System.out.format("%s, %s, %d, %n", RoomCode, RoomName, Beds);
 				}
 			}
 
@@ -204,6 +217,52 @@ public class InnReservations {
 			// Step 6: (omitted in this example) Commit or rollback transaction
 		}
 	}
+
+
+	private void cancel_reservation() throws SQLException {
+		System.out.println("FR4: Cancel Reservation\r\n");
+		init_connection();
+
+		try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
+				System.getenv("HP_JDBC_USER"),
+				System.getenv("HP_JDBC_PW"))) {
+			// Get Query Params
+			Scanner scanner = new Scanner(System.in);
+			System.out.print("Enter the code of the reservation you would like to cancel: ");
+
+			int code = Integer.parseInt(scanner.nextLine());
+
+			String fetch_reservation_query = ("SELECT * FROM lab7_reservations WHERE CODE = ?");
+			String delete_row = ("DELETE FROM lab7_reservations WHERE CODE = ?");
+
+
+			StringBuilder sb = new StringBuilder(delete_row);
+			List<Object> params = new ArrayList<Object>();
+			params.add(code);
+
+			// Execute Query
+			try (PreparedStatement pstmt = conn.prepareStatement(sb.toString())) {
+				int i = 1;
+				for (Object p : params) {
+					pstmt.setObject(i++, p);
+				}
+
+				int r_deleted = pstmt.executeUpdate();
+
+				if (r_deleted == 1){
+					System.out.println("Reservation successfully deleted");
+				}
+				else {
+					System.out.format("No reservation found with code %d", code);
+				}
+
+					
+			}
+			
+		}
+
+	}
+
 
     // Demo1 - Establish JDBC connection, execute DDL statement
     private void demo1() throws SQLException {
