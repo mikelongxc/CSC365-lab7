@@ -10,6 +10,11 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.Calendar;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 
 /*
 Introductory JDBC examples based loosely on the BAKERY dataset from CSC 365 labs.
@@ -115,15 +120,39 @@ public class InnReservations {
 
 	}
 
+	private List<Integer> count_weekdays_and_weekends(Date start, Date end) {
+    	Calendar startCal = Calendar.getInstance();
+    	startCal.setTime(start);
+
+    	Calendar endCal = Calendar.getInstance();
+    	endCal.setTime(end);
+
+    	List<Integer> weekendsAndWeekdays = new ArrayList<Integer>();
+    	weekendsAndWeekdays.add(0);
+    	weekendsAndWeekdays.add(0);
+
+    	do {
+    		if (startCal.get(Calendar.DAY_OF_WEEK) != Calendar.SATURDAY && startCal.get(Calendar.DAY_OF_WEEK) != Calendar.SUNDAY) {
+				weekendsAndWeekdays.set(1, weekendsAndWeekdays.get(1) + 1);
+			} else {
+    			weekendsAndWeekdays.set(0, weekendsAndWeekdays.get(0) + 1);
+			}
+			startCal.add(Calendar.DAY_OF_MONTH, 1);
+		} while (startCal.getTimeInMillis() <= endCal.getTimeInMillis());
+
+    	return weekendsAndWeekdays;
+	}
+
 	private void display_available_rooms(List<List<Object>> availableRooms) {
     	int i = 1;
     	for (List<Object> room : availableRooms) {
 			System.out.format(
-				"%d - %s %s %s %n",
+				"%d - %s - %s, %s, %s %n",
 				i,
 				room.get(0),
 				room.get(1),
-				room.get(2)
+				room.get(2),
+				room.get(3)
 			);
 			i++;
 		}
@@ -146,6 +175,7 @@ public class InnReservations {
 					availableRooms.add(
 						new ArrayList<Object>(Arrays.asList(
 								rs.getString("RoomCode"),
+								rs.getString("RoomName"),
 								rs.getString("bedType"),
 								rs.getString("decor")
 						))
@@ -159,6 +189,107 @@ public class InnReservations {
 		return availableRooms;
 	}
 
+	private Double get_base_room_price(String RoomCode, Connection conn) throws SQLException {
+		PreparedStatement pstmt = conn.prepareStatement("SELECT basePrice FROM mjlong.lab7_rooms WHERE RoomCode = ?");
+		pstmt.setObject(1, RoomCode);
+		ResultSet rs = pstmt.executeQuery();
+		rs.first();
+
+		return rs.getDouble("basePrice");
+	}
+
+	private int get_max_reservation_id(Connection conn) throws SQLException {
+		StringBuilder maxSb = new StringBuilder("SELECT MAX(CODE) AS max FROM mjlong.lab7_reservations");
+		PreparedStatement maxPstmt = conn.prepareStatement(maxSb.toString());
+		ResultSet maxRs = maxPstmt.executeQuery();
+		maxRs.first();
+
+		return Integer.parseInt(maxRs.getString("max"));
+	}
+
+	private int select_room_reservation(
+			Connection conn,
+			int selection,
+			List<List<Object>> availableRooms,
+			String firstName,
+			String lastName,
+			String checkIn,
+			String checkOut,
+			int numAdults,
+			int numChildren
+	) throws SQLException, ParseException {
+		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+		Date checkInDate = format.parse(checkIn);
+		Date checkOutDate = format.parse(checkOut);
+
+		List<Integer> weekendsAndWeekdays = count_weekdays_and_weekends(checkInDate, checkOutDate);
+
+		Double basePrice = get_base_room_price(availableRooms.get(selection - 1).get(0).toString(), conn);
+
+		Double totalCost = basePrice * weekendsAndWeekdays.get(1) + basePrice * weekendsAndWeekdays.get(0) * 1.1;
+
+		System.out.println("Please confirm this is the room you would like to reserve:\n");
+		System.out.format(
+				"Name: %s, %s\n" +
+				"Room Description: %s - %s, %s \n" +
+				"Dates: %s - %s\n" +
+				"Adults: %s\n" +
+				"Children: %s\n" +
+				"Total Cost of Stay: $%,.2f\n\n",
+				firstName,
+				lastName,
+				availableRooms.get(selection - 1).get(0),
+				availableRooms.get(selection - 1).get(1),
+				availableRooms.get(selection - 1).get(2),
+				checkIn,
+				checkOut,
+				numAdults,
+				numChildren,
+				totalCost
+		);
+
+		System.out.println("Type 'CONFIRM' to confirm or 'q' to return to the main menu: ");
+		Scanner scanner = new Scanner(System.in);
+
+		String choice = scanner.nextLine();
+
+		while (!"q".equalsIgnoreCase(choice) && !"CONFIRM".equals(choice)) {
+			System.out.println("Invalid selection. Please type 'CONFIRM' to confirm or 'q' to cancel: ");
+			choice = scanner.nextLine();
+		}
+		if ("q".equalsIgnoreCase(choice)) {
+			return 1;
+		}
+
+		int newReservationCode = get_max_reservation_id(conn) + 1;
+
+		PreparedStatement insertPstmt = conn.prepareStatement(String.format(
+				"INSERT INTO mjlong.`lab7_reservations` " +
+					"(CODE, Room, CheckIn, CheckOut, Rate, LastName, FirstName, Adults, Kids)" +
+					"VALUES (%d, '%s', '%s', '%s', %,.2f, '%s', '%s', %d, %d)",
+				newReservationCode,
+				availableRooms.get(selection - 1).get(0),
+				checkIn,
+				checkOut,
+				totalCost / (weekendsAndWeekdays.get(0) + weekendsAndWeekdays.get(1)),
+				lastName.toUpperCase(),
+				firstName.toUpperCase(),
+				numAdults,
+				numChildren
+		));
+
+		int updatedRows = insertPstmt.executeUpdate();
+
+		if (updatedRows > 0) {
+			System.out.println("Successfully booked your reservation. See you then!");
+		} else {
+			System.out.println("ERROR: Could not book your reservation.");
+			return 1;
+		}
+
+		return 0;
+	}
+
 	private int get_max_occ(Connection conn) throws SQLException {
 		StringBuilder maxSb = new StringBuilder("SELECT MAX(maxOcc) AS max FROM mjlong.lab7_rooms");
 		PreparedStatement maxPstmt = conn.prepareStatement(maxSb.toString());
@@ -168,11 +299,10 @@ public class InnReservations {
 		return Integer.parseInt(maxRs.getString("max"));
 	}
 
-	private int reservations() throws SQLException {
+	private int reservations() throws SQLException, ParseException {
 		System.out.println("\nFR2: Reservations\r\n");
 
 		init_connection();
-
 
 		try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
 				System.getenv("HP_JDBC_USER"),
@@ -199,7 +329,7 @@ public class InnReservations {
 
 			if (numChildren + numAdults > get_max_occ(conn)) {
 				System.out.print("Your party size is greater than our maximum room size. No rooms are available matching this occupancy.\n");
-				return 0;
+				return 1;
 			}
 
 			List<Object> params = new ArrayList<Object>();
@@ -209,7 +339,7 @@ public class InnReservations {
 			params.add(numAdults);
 
 			String availableRoomsQuery = (
-				"SELECT DISTINCT RoomCode, bedType, decor, maxOcc FROM mjlong.lab7_reservations Reservations " +
+				"SELECT DISTINCT RoomCode, RoomName, bedType, decor FROM mjlong.lab7_reservations Reservations " +
 					"JOIN mjlong.lab7_rooms Rooms ON Rooms.RoomCode = Reservations.Room " +
 					"WHERE Rooms.RoomCode NOT IN (" +
 						"SELECT r2.Room " +
@@ -266,21 +396,37 @@ public class InnReservations {
 				availableRooms = query_for_room_matches(similarSb, params, conn);
 			}
 
-			System.out.println(availableRooms);
-
 			if (availableRooms.size() == 0) {
 				System.out.println("No matches found for your requested date range.");
-				return 0;
+				return 1;
 			} else {
 				display_available_rooms(availableRooms);
 			}
 
 			System.out.format("----------------------%nFound %d %s%s %n", availableRooms.size(), matchType, availableRooms.size() == 1 ? "" : "es");
 
+			System.out.println("\nSelect one of the room options by number or 'q' to cancel reservation: ");
+			String selection = scanner.nextLine();
+			while (!"q".equalsIgnoreCase(selection) && (Integer.parseInt(selection) < 1 || Integer.parseInt(selection) > availableRooms.size())) {
+				System.out.println("Invalid selection. Please select one of the reservation numbers above or 'q' to cancel: ");
+				selection = scanner.nextLine();
+			}
+			if ("q".equalsIgnoreCase(selection)) {
+				return 1;
+			}
 
+			return select_room_reservation(
+					conn,
+					Integer.parseInt(selection),
+					availableRooms,
+					firstName,
+					lastName,
+					checkIn,
+					checkOut,
+					numAdults,
+					numChildren
+			);
 		}
-
-		return 1;
 	}
 
 
