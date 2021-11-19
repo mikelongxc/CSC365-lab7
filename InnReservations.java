@@ -280,28 +280,28 @@ public class InnReservations {
 			System.out.print("Enter desired room code: ");
 			String roomCode = scanner.nextLine();
 			System.out.print("Enter desired reservation code: ");
-			int reservationCode = Integer.parseInt(scanner.nextLine());
+			String reservationCodeStr = scanner.nextLine();
+			if (reservationCodeStr != "") {
+				int reservationCode = Integer.parseInt(reservationCodeStr);
+			}
 			
-			String availableRoomsQuery = (
+			String baseQuery = (
 				"SELECT RoomName, lab7_reservations.* FROM lab7_reservations JOIN lab7_rooms ON Room = RoomCode");
 
 			// Build query string
-			StringBuilder sb = new StringBuilder(availableRoomsQuery);
-
+			StringBuilder sb = new StringBuilder(baseQuery);
+			
 			List<Object> params = new ArrayList<Object>();
+
 			params.add(firstName);
 			params.add(lastName);
 			params.add(dateRange1);
 			params.add(dateRange2);
 			params.add(roomCode);
-			if (!"any".equalsIgnoreCase(roomCode)) {
-				sb.append(" AND RoomCode = ?");
-				params.add(roomCode);
-			}
-			if (!"any".equalsIgnoreCase(bedType)) {
-				sb.append(" AND bedType = ?");
-				params.add(bedType);
-			}
+			if (!"any".equalsIgnoreCase(firstName)) {
+				sb.append(" AND FirstName = ?");
+				params.add(firstName);
+			} 
 
 			// Execute Query
 			try (PreparedStatement pstmt = conn.prepareStatement(sb.toString())) {
@@ -311,21 +311,28 @@ public class InnReservations {
 				}
 
 				try (ResultSet rs = pstmt.executeQuery()) {
-					System.out.format("%nAvailable Rooms:%n");
+					System.out.format("%nReservations:%n");
 					int matchCount = 0;
 					while (rs.next()) {
 						System.out.format(
-								"%s %s %s %n",
-								rs.getString("RoomCode"),
-								rs.getString("bedType"),
-								rs.getString("decor")
+								"%s, %d, %s, %s, %s, ($%.2f), %s, %s, %d, %d %n",
+								rs.getString("RoomName"),
+								rs.getInt("CODE"),
+								rs.getString("Room"),
+								rs.getString("CheckIn"),
+								rs.getString("CheckOut"),
+								rs.getFloat("Rate"),
+								rs.getString("LastName"),
+								rs.getString("FirstName"),
+								rs.getInt("Adults"),
+								rs.getInt("Kids")
 						);
 						matchCount++;
 					}
 
 					if (matchCount == 0) {
 						PreparedStatement similarpstmt = conn.prepareStatement(
-								new StringBuilder(availableRoomsQuery).toString()
+								new StringBuilder(baseQuery).toString()
 						);
 						i = 1;
 						for (Object p : params) {
