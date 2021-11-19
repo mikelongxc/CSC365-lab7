@@ -48,7 +48,7 @@ public class InnReservations {
             case 2: ir.reservations(); break;
             case 3: ir.demo3(); break;
             case 4: ir.cancel_reservation(); break;
-            case 5: ir.demo5(); break;
+            case 5: ir.detailed_reservations(); break;
             }
             
 	} catch (SQLException e) {
@@ -253,15 +253,111 @@ public class InnReservations {
 					System.out.println("Reservation successfully deleted");
 				}
 				else {
-					System.out.format("No reservation found with code %d", code);
+					System.out.format("No reservation found with code %d %n", code);
+				}
+			}
+		}
+	}
+
+	private void detailed_reservations() throws SQLException {
+		System.out.println("FR5: Detailed reservation information\r\n");
+
+    	init_connection();
+
+		try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
+				System.getenv("HP_JDBC_USER"),
+				System.getenv("HP_JDBC_PW"))) {
+			// Get Query Params
+			Scanner scanner = new Scanner(System.in);
+			System.out.print("Enter first name: ");
+			String firstName = scanner.nextLine();
+			System.out.print("Enter last name: ");
+			String lastName = scanner.nextLine();
+			System.out.print("Enter first date in range: ");
+			String dateRange1 = scanner.nextLine();
+			System.out.print("Enter second date in range: ");
+			String dateRange2 = scanner.nextLine();
+			System.out.print("Enter desired room code: ");
+			String roomCode = scanner.nextLine();
+			System.out.print("Enter desired reservation code: ");
+			int reservationCode = Integer.parseInt(scanner.nextLine());
+			
+			String availableRoomsQuery = (
+				"SELECT RoomName, lab7_reservations.* FROM lab7_reservations JOIN lab7_rooms ON Room = RoomCode");
+
+			// Build query string
+			StringBuilder sb = new StringBuilder(availableRoomsQuery);
+
+			List<Object> params = new ArrayList<Object>();
+			params.add(firstName);
+			params.add(lastName);
+			params.add(dateRange1);
+			params.add(dateRange2);
+			params.add(roomCode);
+			if (!"any".equalsIgnoreCase(roomCode)) {
+				sb.append(" AND RoomCode = ?");
+				params.add(roomCode);
+			}
+			if (!"any".equalsIgnoreCase(bedType)) {
+				sb.append(" AND bedType = ?");
+				params.add(bedType);
+			}
+
+			// Execute Query
+			try (PreparedStatement pstmt = conn.prepareStatement(sb.toString())) {
+				int i = 1;
+				for (Object p : params) {
+					pstmt.setObject(i++, p);
 				}
 
-					
+				try (ResultSet rs = pstmt.executeQuery()) {
+					System.out.format("%nAvailable Rooms:%n");
+					int matchCount = 0;
+					while (rs.next()) {
+						System.out.format(
+								"%s %s %s %n",
+								rs.getString("RoomCode"),
+								rs.getString("bedType"),
+								rs.getString("decor")
+						);
+						matchCount++;
+					}
+
+					if (matchCount == 0) {
+						PreparedStatement similarpstmt = conn.prepareStatement(
+								new StringBuilder(availableRoomsQuery).toString()
+						);
+						i = 1;
+						for (Object p : params) {
+							if (i < 5) {
+								similarpstmt.setObject(i++, p);
+							}
+						}
+
+						try(ResultSet similarrs = similarpstmt.executeQuery()) {
+							System.out.format("No exact matches found. Here are some similar available rooms:%n");
+							matchCount = 0;
+							while (similarrs.next()) {
+								System.out.format(
+										"%s %s %s %n",
+										similarrs.getString("RoomCode"),
+										similarrs.getString("bedType"),
+										similarrs.getString("decor")
+								);
+								matchCount++;
+							}
+						}
+					}
+
+					System.out.format("----------------------%nFound %d match%s %n", matchCount, matchCount == 1 ? "" : "es");
+				}
 			}
-			
+
+			// Step 6: (omitted in this example) Commit or rollback transaction
 		}
 
 	}
+
 
 
     // Demo1 - Establish JDBC connection, execute DDL statement
