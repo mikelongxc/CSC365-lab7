@@ -9,6 +9,7 @@ import java.util.Scanner;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /*
 Introductory JDBC examples based loosely on the BAKERY dataset from CSC 365 labs.
@@ -114,15 +115,70 @@ public class InnReservations {
 
 	}
 
-	private void reservations() throws SQLException {
-    	System.out.println("FR2: Reservations\r\n");
+	private void display_available_rooms(List<List<Object>> availableRooms) {
+    	int i = 1;
+    	for (List<Object> room : availableRooms) {
+			System.out.format(
+				"%d - %s %s %s %n",
+				i,
+				room.get(0),
+				room.get(1),
+				room.get(2)
+			);
+			i++;
+		}
+	}
 
-    	init_connection();
+	private List<List<Object>> query_for_room_matches(StringBuilder sb, List<Object> params, Connection conn) throws SQLException {
+		int matchCount = 0;
+		List<List<Object>> availableRooms = new ArrayList<List<Object>>();
+		try (PreparedStatement pstmt = conn.prepareStatement(sb.toString())) {
+			int i = 1;
+			for (Object p : params) {
+				pstmt.setObject(i++, p);
+			}
+
+			try (ResultSet rs = pstmt.executeQuery()) {
+				while (rs.next() && matchCount < 5) {
+					if (matchCount == 0) {
+						System.out.format("%nAvailable Rooms:%n");
+					}
+					availableRooms.add(
+						new ArrayList<Object>(Arrays.asList(
+								rs.getString("RoomCode"),
+								rs.getString("bedType"),
+								rs.getString("decor")
+						))
+					);
+
+					matchCount++;
+				}
+			}
+		}
+
+		return availableRooms;
+	}
+
+	private int get_max_occ(Connection conn) throws SQLException {
+		StringBuilder maxSb = new StringBuilder("SELECT MAX(maxOcc) AS max FROM mjlong.lab7_rooms");
+		PreparedStatement maxPstmt = conn.prepareStatement(maxSb.toString());
+		ResultSet maxRs = maxPstmt.executeQuery();
+		maxRs.first();
+
+		return Integer.parseInt(maxRs.getString("max"));
+	}
+
+	private int reservations() throws SQLException {
+		System.out.println("\nFR2: Reservations\r\n");
+
+		init_connection();
+
 
 		try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
 				System.getenv("HP_JDBC_USER"),
 				System.getenv("HP_JDBC_PW"))) {
-			// Get Query Params
+
+			get_max_occ(conn);
 			Scanner scanner = new Scanner(System.in);
 			System.out.print("Enter your first name: ");
 			String firstName = scanner.nextLine();
@@ -141,81 +197,90 @@ public class InnReservations {
 			System.out.print("How many adults in your party? ");
 			int numAdults = Integer.parseInt(scanner.nextLine());
 
+			if (numChildren + numAdults > get_max_occ(conn)) {
+				System.out.print("Your party size is greater than our maximum room size. No rooms are available matching this occupancy.\n");
+				return 0;
+			}
+
+			List<Object> params = new ArrayList<Object>();
+			params.add(checkOut);
+			params.add(checkIn);
+			params.add(numChildren);
+			params.add(numAdults);
+
 			String availableRoomsQuery = (
-				"SELECT DISTINCT RoomCode, bedType, decor FROM mjlong.lab7_reservations Reservations " +
-				"JOIN mjlong.lab7_rooms Rooms ON Rooms.RoomCode = Reservations.Room " +
-				"WHERE (CheckIn > ? OR CheckOut < ?) AND ? + ? <= Rooms.maxOcc"
+				"SELECT DISTINCT RoomCode, bedType, decor, maxOcc FROM mjlong.lab7_reservations Reservations " +
+					"JOIN mjlong.lab7_rooms Rooms ON Rooms.RoomCode = Reservations.Room " +
+					"WHERE Rooms.RoomCode NOT IN (" +
+						"SELECT r2.Room " +
+							"FROM mjlong.lab7_reservations r2 " +
+							"WHERE r2.CheckIn < ? AND r2.CheckOut > ? " +
+					") AND ? + ? <= Rooms.maxOcc"
 			);
 
 			// Build query string
-			StringBuilder sb = new StringBuilder(availableRoomsQuery);
+			StringBuilder exactSb = new StringBuilder(availableRoomsQuery);
 
-			List<Object> params = new ArrayList<Object>();
-			params.add(checkIn);
-			params.add(checkOut);
-			params.add(numChildren);
-			params.add(numAdults);
 			if (!"any".equalsIgnoreCase(roomCode)) {
-				sb.append(" AND RoomCode = ?");
+				exactSb.append(" AND RoomCode = ?");
 				params.add(roomCode);
 			}
 			if (!"any".equalsIgnoreCase(bedType)) {
-				sb.append(" AND bedType = ?");
+				exactSb.append(" AND bedType = ?");
 				params.add(bedType);
 			}
 
-			// Execute Query
-			try (PreparedStatement pstmt = conn.prepareStatement(sb.toString())) {
-				int i = 1;
-				for (Object p : params) {
-					pstmt.setObject(i++, p);
+			String matchType = "exact match";
+
+			List<List<Object>> availableRooms = query_for_room_matches(exactSb, params, conn);
+
+			if (availableRooms.size() == 0) {
+				boolean flag = false;
+				while (params.size() > 4) {
+					params.remove(4);
 				}
 
-				try (ResultSet rs = pstmt.executeQuery()) {
-					System.out.format("%nAvailable Rooms:%n");
-					int matchCount = 0;
-					while (rs.next()) {
-						System.out.format(
-								"%s %s %s %n",
-								rs.getString("RoomCode"),
-								rs.getString("bedType"),
-								rs.getString("decor")
-						);
-						matchCount++;
-					}
+				matchType = "close match";
 
-					if (matchCount == 0) {
-						PreparedStatement similarpstmt = conn.prepareStatement(
-								new StringBuilder(availableRoomsQuery).toString()
-						);
-						i = 1;
-						for (Object p : params) {
-							if (i < 5) {
-								similarpstmt.setObject(i++, p);
-							}
-						}
+				StringBuilder similarSb = new StringBuilder(availableRoomsQuery);
 
-						try(ResultSet similarrs = similarpstmt.executeQuery()) {
-							System.out.format("No exact matches found. Here are some similar available rooms:%n");
-							matchCount = 0;
-							while (similarrs.next()) {
-								System.out.format(
-										"%s %s %s %n",
-										similarrs.getString("RoomCode"),
-										similarrs.getString("bedType"),
-										similarrs.getString("decor")
-								);
-								matchCount++;
-							}
-						}
-					}
+				String operator = " AND (";
 
-					System.out.format("----------------------%nFound %d match%s %n", matchCount, matchCount == 1 ? "" : "es");
+				if (!"any".equalsIgnoreCase(bedType)) {
+					flag = true;
+					similarSb.append(operator);
+					similarSb.append(" bedType = ?");
+					params.add(bedType);
+					operator = " OR ";
 				}
+				if (!"any".equalsIgnoreCase(roomCode)) {
+					flag = true;
+					similarSb.append(operator);
+					similarSb.append(" decor IN (SELECT decor FROM mjlong.lab7_rooms WHERE RoomCode = ?)");
+					params.add(roomCode);
+				}
+				if (flag) {
+					similarSb.append(")");
+				}
+
+				availableRooms = query_for_room_matches(similarSb, params, conn);
 			}
 
-			// Step 6: (omitted in this example) Commit or rollback transaction
+			System.out.println(availableRooms);
+
+			if (availableRooms.size() == 0) {
+				System.out.println("No matches found for your requested date range.");
+				return 0;
+			} else {
+				display_available_rooms(availableRooms);
+			}
+
+			System.out.format("----------------------%nFound %d %s%s %n", availableRooms.size(), matchType, availableRooms.size() == 1 ? "" : "es");
+
+
 		}
+
+		return 1;
 	}
 
 
