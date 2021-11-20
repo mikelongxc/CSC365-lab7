@@ -21,6 +21,7 @@ All runtime instructions are given within CLI.
 No known bugs
 
 **Contributions**: <br />
+
 ####hpigg:
 * FR2
 * FR3
@@ -28,6 +29,7 @@ No known bugs
     conflicts, so I pushed the changes to a new branch and mjlong merged in the changes.
 * CLI
 * Transaction Control <br />
+
 ####mjlong:
 * FR1
 * FR4
