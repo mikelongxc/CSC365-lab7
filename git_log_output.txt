@@ -1,0 +1,303 @@
+commit 024e7baa5a8bc4cc9c2156564ad23da9c6af6176
+Author: henrypigg <henry.pigg@gmail.com>
+Date:   Fri Nov 19 20:48:25 2021 -0800
+
+    Added CLI and transaction control to update statements
+
+ InnReservations.java | 163 +++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 111 insertions(+), 52 deletions(-)
+
+commit e391161246ecdb124bba23099207a6e05d58e0ef
+Author: Michael Long <mikelongxc@gmail.com>
+Date:   Fri Nov 19 18:08:57 2021 -0800
+
+    removed commit message from FR4
+
+ InnReservations.class | Bin 33013 -> 26984 bytes
+ InnReservations.java  |   2 --
+ 2 files changed, 2 deletions(-)
+
+commit fc8b96c7dd2a340a971441ba56d95f008e016c18
+Author: Michael Long <mikelongxc@gmail.com>
+Date:   Fri Nov 19 18:01:49 2021 -0800
+
+    Update README.md
+
+ README.md | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+commit fdc9ce6d03d69f25ae7f4df0457f08523ec129f2
+Author: Michael Long <mikelongxc@gmail.com>
+Date:   Fri Nov 19 18:01:33 2021 -0800
+
+    Update README.md
+
+ README.md | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
+
+commit 34f71d1db720f89ab2c919a4a6eb60eba25ae426
+Author: Michael Long <mikelongxc@gmail.com>
+Date:   Fri Nov 19 18:00:38 2021 -0800
+
+    Update README.md
+
+ README.md | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+commit c482b8025cbf89599f452d419f38e937e8bc7c40
+Author: Michael Long <mikelongxc@gmail.com>
+Date:   Fri Nov 19 17:57:33 2021 -0800
+
+    FR6 done -- included hpigg merge from FR3
+
+ InnReservations.class | Bin 29827 -> 33013 bytes
+ InnReservations.java  | 258 +++++---------------------------------------------
+ 2 files changed, 25 insertions(+), 233 deletions(-)
+
+commit 0c2d8f362edaf9e22e060a882b8d5cc68e53ecec
+Author: Michael Long <mikelongxc@gmail.com>
+Date:   Fri Nov 19 17:11:37 2021 -0800
+
+    fr3 merge, fr5 finished, fr6 init
+
+ InnReservations.class | Bin 24525 -> 29827 bytes
+ InnReservations.java  | 227 +++++++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 225 insertions(+), 2 deletions(-)
+
+commit cac72550b553ceec6e5433c217b1a8cb46cb1c61
+Author: Michael Long <mikelongxc@gmail.com>
+Date:   Fri Nov 19 16:17:34 2021 -0800
+
+    FR1 bugfixes
+
+ InnReservations.class | Bin 24448 -> 24525 bytes
+ InnReservations.java  |  63 +++++++++++++++++++++++++-------------------------
+ out1.csv              |  15 ++++++++++++
+ 3 files changed, 46 insertions(+), 32 deletions(-)
+
+commit 39c3848953f231fbbbb80e49688269ca95bdf1e3
+Author: Michael Long <mikelongxc@gmail.com>
+Date:   Fri Nov 19 16:08:00 2021 -0800
+
+    FR5 completed
+
+ InnReservations.class | Bin 19505 -> 24448 bytes
+ InnReservations.java  |  86 ++++++++++++++++++++++++++------------------------
+ 2 files changed, 44 insertions(+), 42 deletions(-)
+
+commit b6039d1ed6b11d959a018cb143aab485018f037c
+Merge: 4bb7fff a9a0cee
+Author: Michael Long <mikelongxc@gmail.com>
+Date:   Fri Nov 19 13:40:10 2021 -0800
+
+    some merge stuff
+
+commit 4bb7fff66072964a455929aefb80cd509471f293
+Author: Michael Long <mikelongxc@gmail.com>
+Date:   Fri Nov 19 13:33:16 2021 -0800
+
+    fr5 and fr6 init
+
+ InnReservations.class | Bin 16505 -> 19505 bytes
+ InnReservations.java  |  43 +++++++++++++++++++++++++------------------
+ 2 files changed, 25 insertions(+), 18 deletions(-)
+
+commit a9a0cee007c99f420786358469613a80fa7e1fa5
+Author: henrypigg <henry.pigg@gmail.com>
+Date:   Fri Nov 19 11:54:14 2021 -0800
+
+    Finalized FR2
+
+ InnReservations.java | 587 ++++++++++++++++++++++++++-------------------------
+ 1 file changed, 294 insertions(+), 293 deletions(-)
+
+commit d36abbd687c961c837c326bcb923e0e56dd01ecd
+Author: Michael Long <mikelongxc@gmail.com>
+Date:   Fri Nov 19 11:33:53 2021 -0800
+
+    some fr4 stuff
+
+ InnReservations.java | 138 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 138 insertions(+)
+
+commit 915054894dbb992c5ffc6163194624791db4fdf6
+Merge: 424e8e0 88db270
+Author: henrypigg <henry.pigg@gmail.com>
+Date:   Fri Nov 19 11:42:32 2021 -0800
+
+    Merge branch 'main' of https://github.com/mikelongxc/CSC365-lab7 into main
+
+commit 88db2700832ecc0a52e9f99bd8c2659f7b61c99d
+Author: Michael Long <mikelongxc@gmail.com>
+Date:   Fri Nov 19 11:33:53 2021 -0800
+
+    some fr4 stuff
+
+ InnReservations.java | 104 +++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 100 insertions(+), 4 deletions(-)
+
+commit 424e8e0745d09bf535bdf1f80906b5cee9cb63e8
+Author: henrypigg <henry.pigg@gmail.com>
+Date:   Fri Nov 19 11:30:31 2021 -0800
+
+    Finished FR2
+
+ InnReservations.java | 168 +++++++++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 157 insertions(+), 11 deletions(-)
+
+commit fe78f4c892f728e5dfd98dda281825a9df2e2c37
+Author: henrypigg <henry.pigg@gmail.com>
+Date:   Thu Nov 18 21:52:59 2021 -0800
+
+    Finished Fr2 query. TODO: Book room
+
+ InnReservations.java | 183 ++++++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 124 insertions(+), 59 deletions(-)
+
+commit c64a387581c36336b4c0a1215b3d309438c0130d
+Author: Michael Long <mikelongxc@gmail.com>
+Date:   Thu Nov 18 20:55:04 2021 -0800
+
+    fr1 java and fr4 finished w/ prepared statements
+
+ .idea/.name           |   1 +
+ InnReservations.class | Bin 9864 -> 16505 bytes
+ InnReservations.java  |  69 ++++++++++++++++++++++++++++++++++++++++++++++----
+ 3 files changed, 65 insertions(+), 5 deletions(-)
+
+commit 0372c0dd436be27fd6184bbea779a0fa928f1e68
+Author: henrypigg <henry.pigg@gmail.com>
+Date:   Wed Nov 17 17:20:10 2021 -0800
+
+    First part of FR2
+
+ InnReservations.java | 119 ++++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 112 insertions(+), 7 deletions(-)
+
+commit 515ab51bed11a03cebe1793c5d7ae2d0fb1fca7b
+Author: Michael Long <mikelongxc@gmail.com>
+Date:   Tue Nov 16 22:00:33 2021 -0800
+
+    finished FR1 query, made it a string, TODO: preparedstatement, while loop for result handling
+
+ InnReservations.class | Bin 0 -> 9864 bytes
+ InnReservations.java  |  60 +++++++++++++++++++++++++++++++++++++++++---------
+ 2 files changed, 50 insertions(+), 10 deletions(-)
+
+commit cac0eeff84d34c9c3d0dc016f5affc5d0090a328
+Author: Michael Long <mikelongxc@gmail.com>
+Date:   Tue Nov 16 20:29:01 2021 -0800
+
+    init
+
+ InnReservations.java | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+commit 13498d90a119ea28b1838185e0948391db50f1be
+Author: Michael Long <mikelongxc@gmail.com>
+Date:   Tue Nov 16 20:26:19 2021 -0800
+
+    init
+
+ InnReservations.java | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
+
+commit 96daf0683ffbcb3889cb2fa95d13211252a087ec
+Author: Michael Long <mikelongxc@gmail.com>
+Date:   Tue Nov 16 20:23:42 2021 -0800
+
+    init
+
+ CSC365-lab7.iml                                    |  11 -
+ src/InnReservations.java => InnReservations.java   |   0
+ JDBC Sample Code/HastyPastry.class                 | Bin 9066 -> 0 bytes
+ JDBC Sample Code/HastyPastry.java                  | 265 ---------------------
+ JDBC Sample Code/auth.jdbc.TEMPLATE                |   3 -
+ Lab7Spec.pdf                                       | Bin 110174 -> 0 bytes
+ ...a-8.0.16.jar => mysql-connector-java-8.0.16.jar | Bin
+ out/production/CSC365-lab7/HastyPastry.class       | Bin 10197 -> 0 bytes
+ out/production/CSC365-lab7/auth.jdbc.TEMPLATE      |   3 -
+ .../CSC365-lab7/mysql-connector-java-8.0.16.jar    | Bin 2293144 -> 0 bytes
+ src/auth.jdbc.TEMPLATE                             |   3 -
+ src/mysql-connector-java-8.0.16.jar                | Bin 2293144 -> 0 bytes
+ 12 files changed, 285 deletions(-)
+
+commit df00e2d925bcde90f6e29bd952fea92356de5e61
+Merge: 9017f5f f6c3870
+Author: Michael Long <mikelongxc@gmail.com>
+Date:   Tue Nov 16 20:16:10 2021 -0800
+
+    Merge branch 'main' of github.com:mikelongxc/CSC365-lab7 into main
+    
+    necessary merge
+
+commit 9017f5fd83dfb83147c2347260802cfd0971ba3b
+Author: Michael Long <mikelongxc@gmail.com>
+Date:   Tue Nov 16 20:15:46 2021 -0800
+
+    sample code running
+
+ .idea/.gitignore                                   |   8 +
+ .idea/misc.xml                                     |   6 +
+ .idea/modules.xml                                  |   8 +
+ .idea/uiDesigner.xml                               | 124 ++++++++++
+ .idea/vcs.xml                                      |   6 +
+ CSC365-lab7.iml                                    |  11 +
+ JDBC Sample Code/HastyPastry.class                 | Bin 0 -> 9066 bytes
+ JDBC Sample Code/HastyPastry.java                  |  20 +-
+ JDBC Sample Code/auth.jdbc.TEMPLATE                |   6 +-
+ out/production/CSC365-lab7/HastyPastry.class       | Bin 0 -> 10197 bytes
+ out/production/CSC365-lab7/auth.jdbc.TEMPLATE      |   3 +
+ .../CSC365-lab7/mysql-connector-java-8.0.16.jar    | Bin 0 -> 2293144 bytes
+ src/InnReservations.java                           | 264 +++++++++++++++++++++
+ src/auth.jdbc.TEMPLATE                             |   3 +
+ src/mysql-connector-java-8.0.16.jar                | Bin 0 -> 2293144 bytes
+ 15 files changed, 449 insertions(+), 10 deletions(-)
+
+commit f6c38704bba218e0a7d309a1ef5b57053f02d779
+Author: Michael Long <mikelongxc@gmail.com>
+Date:   Tue Nov 16 17:43:24 2021 -0800
+
+    Update README.md
+
+ README.md | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+commit 27960e9690e7abaa039db753ca0b487f379a22bb
+Author: Michael Long <mikelongxc@gmail.com>
+Date:   Tue Nov 16 17:42:24 2021 -0800
+
+    Update README.md
+
+ README.md | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+commit 2f69fb10197edcbaac54972e85b9ff7d0ddba74c
+Author: Michael Long <mikelongxc@gmail.com>
+Date:   Tue Nov 16 17:41:37 2021 -0800
+
+    Update README.md
+
+ README.md | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+commit b982a7f472d9cd5b2ebb9f3c7eac111c77ce9c69
+Author: Michael Long <mikelongxc@gmail.com>
+Date:   Tue Nov 16 15:13:06 2021 -0800
+
+    sample code and spec
+
+ JDBC Sample Code/HastyPastry.java                | 259 +++++++++++++++++++++++
+ JDBC Sample Code/auth.jdbc.TEMPLATE              |   3 +
+ JDBC Sample Code/mysql-connector-java-8.0.16.jar | Bin 0 -> 2293144 bytes
+ Lab7Spec.pdf                                     | Bin 0 -> 110174 bytes
+ 4 files changed, 262 insertions(+)
+
+commit 812c6d7ba434f97e3c61f4a7da11fdea025d2a50
+Author: Michael Long <mikelongxc@gmail.com>
+Date:   Tue Nov 16 10:58:51 2021 -0800
+
+    Initial commit
+
+ README.md | 1 +
+ 1 file changed, 1 insertion(+)
