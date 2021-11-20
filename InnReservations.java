@@ -52,7 +52,7 @@ public class InnReservations {
 			switch (demoNum) {
 				case 1: ir.rooms_and_rates(); break;
 				case 2: ir.reservations(); break;
-				case 3: ir.demo3(); break;
+				case 3: ir.change_reservation(); break;
 				case 4: ir.cancel_reservation(); break;
 				case 5: ir.detailed_reservations(); break;
 				case 6: ir.revenue(); break;
@@ -422,6 +422,176 @@ public class InnReservations {
 		}
 	}
 
+	private boolean check_for_conflicting_reservations(
+			Connection conn,
+			String reservationCode,
+			String roomCode,
+			String checkIn,
+			String checkOut,
+			String numChildren,
+			String numAdults
+	) throws SQLException {
+		StringBuilder sb = new StringBuilder(
+				String.format("SELECT DISTINCT RoomCode FROM mjlong.lab7_rooms Rooms " +
+						"WHERE Rooms.RoomCode NOT IN (" +
+							"SELECT r2.Room " +
+								"FROM mjlong.lab7_reservations r2 " +
+								"WHERE r2.CheckIn < '%s' AND r2.Checkout > '%s' AND NOT r2.CODE = '%s' " +
+						") AND %s + %s <= Rooms.maxOcc " +
+						"AND Rooms.RoomCode = '%s'",
+						checkOut,
+						checkIn,
+						reservationCode,
+						numChildren,
+						numAdults,
+						roomCode
+				)
+		);
+
+		PreparedStatement pstmt = conn.prepareStatement(sb.toString());
+
+		ResultSet rs = pstmt.executeQuery();
+
+		if (rs.next() == false) {
+			System.out.println("ERROR: reservation change conflicts with existing reservation.");
+			return false;
+		} else {
+			return true;
+		}
+	}
+
+	private ResultSet get_reservation(Connection conn, String code) throws SQLException {
+		StringBuilder sb = new StringBuilder(
+			"SELECT * FROM mjlong.lab7_reservations " +
+				"WHERE CODE = ?"
+		);
+
+		PreparedStatement pstmt = conn.prepareStatement(sb.toString());
+
+		pstmt.setObject(1, code);
+
+		ResultSet rs = pstmt.executeQuery();
+
+		return rs;
+	}
+
+	private int update_reservation(Connection conn, String code, String updateString, List<Object> params) throws SQLException {
+		StringBuilder sb = new StringBuilder(
+				String.format("UPDATE mjlong.lab7_reservations " +
+						"SET %s " +
+						"WHERE CODE = ?",
+						updateString
+				)
+		);
+
+		PreparedStatement pstmt = conn.prepareStatement(sb.toString());
+
+		int i = 1;
+		for (Object p : params) {
+			pstmt.setObject(i++, p);
+		}
+		pstmt.setObject(i, code);
+
+		int updatedRows = pstmt.executeUpdate();
+
+		if (updatedRows == 0) {
+			System.out.println("Unable to update reservation.");
+			return 1;
+		} else {
+			System.out.format("Successfully updated reservation %s.", code);
+			return 0;
+		}
+	}
+
+	private int change_reservation() throws SQLException {
+		String roomCode = new String();
+		String firstName = new String();
+		String lastName = new String();
+		String checkIn = new String();
+		String checkOut = new String();
+		String childCount = new String();
+		String adultCount = new String();
+
+		System.out.println("FR3: Reservation Change\n");
+		init_connection();
+
+		try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
+				System.getenv("HP_JDBC_USER"),
+				System.getenv("HP_JDBC_PW"))) {
+			Scanner scanner = new Scanner(System.in);
+			System.out.print("Enter the code of your reservation: ");
+			String reservationCode = scanner.nextLine();
+			System.out.print("Enter new first name (or 'no change' to leave unchanged): ");
+			String newFirstName = scanner.nextLine();
+			System.out.print("Enter new last name (or 'no change' to leave unchanged): ");
+			String newLastName = scanner.nextLine();
+			System.out.print("Enter new check in date (or 'no change' to leave unchanged): ");
+			String newCheckIn = scanner.nextLine();
+			System.out.print("Enter new check out date (or 'no change' to leave unchanged): ");
+			String newCheckOut = scanner.nextLine();
+			System.out.print("Enter new child count (or 'no change' to leave unchanged): ");
+			String newChildCount = scanner.nextLine();
+			System.out.print("Enter new adult count (or 'no change' to leave unchanged): ");
+			String newAdultCount = scanner.nextLine();
+
+			String updateString = new String();
+
+			ResultSet rs = get_reservation(conn, reservationCode);
+			if (rs.first() == false) {
+				System.out.println("No matching reservation found.");
+				return 1;
+			} else {
+				roomCode = rs.getString("Room");
+				firstName = rs.getString("FirstName");
+				lastName = rs.getString("LastName");
+				checkIn = rs.getString("CheckIn");
+				checkOut = rs.getString("Checkout");
+				childCount = rs.getString("Kids");
+				adultCount = rs.getString("Adults");
+			}
+
+			List<Object> params = new ArrayList<Object>();
+
+			if (!"no change".equalsIgnoreCase(newFirstName)) {
+				updateString = updateString + ("FirstName = ?, ");
+				firstName = newFirstName;
+				params.add(newFirstName);
+			}
+			if (!"no change".equalsIgnoreCase(newLastName)) {
+				updateString = updateString + ("LastName = ?, ");
+				lastName = newLastName;
+				params.add(newLastName);
+			}
+			if (!"no change".equalsIgnoreCase(newCheckIn)) {
+				updateString = updateString + ("CheckIn = ?, ");
+				checkIn = newCheckIn;
+				params.add(newCheckIn);
+			}
+			if (!"no change".equalsIgnoreCase(newCheckOut)) {
+				updateString = updateString + ("Checkout = ?, ");
+				checkOut = newCheckOut;
+				params.add(newCheckOut);
+			}
+			if (!"no change".equalsIgnoreCase(newChildCount)) {
+				updateString = updateString + (String.format("Kids = ?, "));
+				childCount = newChildCount;
+				params.add(newChildCount);
+			}
+			if (!"no change".equalsIgnoreCase(newAdultCount)) {
+				updateString = updateString + ("Adults = ?, ");
+				adultCount = newAdultCount;
+				params.add(newAdultCount);
+			}
+			updateString = updateString.substring(0, updateString.length() - 2);
+
+			if (check_for_conflicting_reservations(conn, reservationCode, roomCode, checkIn, checkOut, childCount, adultCount)) {
+				return update_reservation(conn, reservationCode, updateString, params);
+			} else {
+				return 1;
+			}
+		}
+	}
+
 	private void cancel_reservation() throws SQLException {
 		System.out.println("FR4: Cancel Reservation\r\n");
 		init_connection();
@@ -560,7 +730,60 @@ public class InnReservations {
 		}
 	}
 
-	private void revenue() {
+	private void revenue() throws SQLException {
+		System.out.println("FR5: Detailed reservation information\r\n");
+
+		init_connection();
+
+		//int reservationCode = 0
+
+		try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
+				System.getenv("HP_JDBC_USER"),
+				System.getenv("HP_JDBC_PW"))) {
+			// Get Query Params
+			Scanner scanner = new Scanner(System.in);
+			System.out.print("Enter desired year for revenue: ");
+			String year = scanner.nextLine();
+			
+			String baseQuery = "";
+			// Build query string
+			StringBuilder sb = new StringBuilder(baseQuery);
+			
+			List<Object> params = new ArrayList<Object>();
+
+			//params.add(firstName);
+		
+			// Execute Query
+			try (PreparedStatement pstmt = conn.prepareStatement(sb.toString())) {
+				int i = 1;
+				for (Object p : params) {
+					pstmt.setObject(i++, p);
+				}
+
+				try (ResultSet rs = pstmt.executeQuery()) {
+					System.out.format("%nReservations:%n");
+					System.out.println("RoomName,CODE,Room,CheckIn,CheckOut,Rate,LastName,FirstName,Adults,Kids");
+					while (rs.next()) {
+						System.out.format(
+								"%s, %d, %s, %s, %s, ($%.2f), %s, %s, %d, %d %n",
+								rs.getString("RoomName"),
+								rs.getInt("CODE"),
+								rs.getString("Room"),
+								rs.getString("CheckIn"),
+								rs.getString("CheckOut"),
+								rs.getFloat("Rate"),
+								rs.getString("LastName"),
+								rs.getString("FirstName"),
+								rs.getInt("Adults"),
+								rs.getInt("Kids")
+						);
+					}
+
+					
+				}
+
+			}
+		}
 
 	}
 
