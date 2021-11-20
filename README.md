@@ -20,7 +20,7 @@ All runtime instructions are given within CLI.
 **Known bugs**:
 No known bugs
 
-***Contributions***:
+**Contributions**: <br />
 ####hpigg:
 * FR2
 * FR3
