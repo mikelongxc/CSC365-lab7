@@ -47,22 +47,56 @@ public class InnReservations {
 	public static void main(String[] args) {
 		try {
 			InnReservations ir = new InnReservations();
-			int demoNum = Integer.parseInt(args[0]);
 
-			switch (demoNum) {
-				case 1: ir.rooms_and_rates(); break;
-				case 2: ir.reservations(); break;
-				case 3: ir.change_reservation(); break;
-				case 4: ir.cancel_reservation(); break;
-				case 5: ir.detailed_reservations(); break;
-				case 6: ir.revenue(); break;
+			ir.print_help();
+
+			Scanner scanner = new Scanner(System.in);
+
+			System.out.printf("> ");
+			String command = scanner.nextLine();
+
+			while (!"q".equals(command)) {
+				switch(command) {
+					case "fr1": ir.rooms_and_rates(); break;
+					case "fr2": ir.reservations(); break;
+					case "fr3": ir.change_reservation(); break;
+					case "fr4": ir.cancel_reservation(); break;
+					case "fr5": ir.detailed_reservations(); break;
+					case "fr6": ir.revenue(); break;
+					default:
+						System.out.println("Invalid Command");
+						break;
+				}
+				ir.print_help();
+				System.out.printf("> ");
+				command = scanner.nextLine();
 			}
-
 		} catch (SQLException e) {
 			System.err.println("SQLException: " + e.getMessage());
 		} catch (Exception e2) {
 			System.err.println("Exception: " + e2.getMessage());
 		}
+	}
+
+	private void print_help() {
+		System.out.println(
+				"\nMain Menu\n\n" +
+				"commands:\n" +
+				"    fr1\n" +
+				"        - List rooms by popularity\n" +
+				"    fr2\n" +
+				"        - Book a room\n" +
+				"    fr3\n" +
+				"        - Make a change to an existing reservation\n" +
+				"    fr4\n" +
+				"        - Cancel an existing reservation\n" +
+				"    fr5\n" +
+				"        - Get detailed reservation information\n" +
+				"    fr6\n" +
+				"        - Get month-by-month revenue for a given year\n" +
+				"    q\n" +
+				"        - Quit the CLI\n"
+		);
 	}
 
 	private static void init_connection() throws SQLException {
@@ -77,7 +111,7 @@ public class InnReservations {
 
 	}
 
-	private void rooms_and_rates() throws SQLException {
+	private int rooms_and_rates() throws SQLException {
 
 		System.out.println("FR1: Rooms and rates\r\n");
 
@@ -86,8 +120,7 @@ public class InnReservations {
 		try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
 				System.getenv("HP_JDBC_USER"),
 				System.getenv("HP_JDBC_PW"))) {
-
-			String q3 = "with RoomPopularity AS ( SELECT Room, ROUND(SUM( CASE WHEN CheckIn >= DATE_ADD(CURDATE(), INTERVAL -180 DAY) AND CheckOut <= CURDATE() THEN DATEDIFF(CheckOut, CheckIn) WHEN CheckIn >= DATE_ADD(CURDATE(), INTERVAL -180 DAY) AND CheckOut > CURDATE() THEN DATEDIFF(CURDATE() , CheckIn) WHEN CheckIn < DATE_ADD(CURDATE(), INTERVAL -180 DAY) AND CheckOut <= CURDATE() THEN DATEDIFF(CheckOut, DATE_ADD(CURDATE(), INTERVAL -180 DAY)) ELSE 365 END)/180,2) AS occ_score FROM lab7_reservations WHERE (CheckOut >= DATE_ADD(CURDATE(), INTERVAL -180 DAY) AND CheckIn <= CURDATE() ) OR (CheckOut > CURDATE() AND CheckIn <= CURDATE() ) GROUP BY Room ORDER BY occ_score DESC ), nextAvailCheckIn AS ( SELECT Room, GREATEST(CURDATE(), MAX(CheckOut)) AS nextAvailableCheckIn FROM lab7_reservations GROUP BY Room ), MostRecentStay AS ( SELECT min_res.Room, DATEDIFF(CheckOut, CheckIn) AS Duration, CheckOut FROM ( SELECT Room, MIN(dt) AS mindt FROM ( SELECT Room, CheckIn, CheckOut, DATEDIFF(CURDATE(), Checkout) as dt FROM lab7_reservations WHERE DATEDIFF(CURDATE(), Checkout) > 0 ) recent_res GROUP BY Room ) min_res JOIN ( SELECT Room, CheckIn, CheckOut, DATEDIFF(CURDATE(), Checkout) as dt FROM lab7_reservations WHERE DATEDIFF(CURDATE(), Checkout) > 0 ) recent_res ON min_res.mindt = recent_res.dt AND recent_res.room = min_res.room ) SELECT rm.RoomCode, rm.RoomName, rm.Beds, rm.bedType, rm.maxOcc, rm.basePrice, rm.decor, occ_score, nextAvailableCheckIn, Duration, CheckOut FROM RoomPopularity AS rp JOIN nextAvailCheckIn AS nc ON rp.Room = nc.Room JOIN MostRecentStay AS mr ON mr.Room = rp.Room JOIN lab7_rooms AS rm ON RoomCode = mr.Room ORDER BY occ_score DESC";
+			String q3 = "with RoomPopularity AS ( SELECT Room, ROUND(SUM( CASE WHEN CheckIn >= DATE_ADD(CURDATE(), INTERVAL -180 DAY) AND CheckOut <= CURDATE() THEN DATEDIFF(CheckOut, CheckIn) WHEN CheckIn >= DATE_ADD(CURDATE(), INTERVAL -180 DAY) AND CheckOut > CURDATE() THEN DATEDIFF(CURDATE() , CheckIn) WHEN CheckIn < DATE_ADD(CURDATE(), INTERVAL -180 DAY) AND CheckOut <= CURDATE() THEN DATEDIFF(CheckOut, DATE_ADD(CURDATE(), INTERVAL -180 DAY)) ELSE 365 END)/180,2) AS occ_score FROM mjlong.lab7_reservations WHERE (CheckOut >= DATE_ADD(CURDATE(), INTERVAL -180 DAY) AND CheckIn <= CURDATE() ) OR (CheckOut > CURDATE() AND CheckIn <= CURDATE() ) GROUP BY Room ORDER BY occ_score DESC ), nextAvailCheckIn AS ( SELECT Room, GREATEST(CURDATE(), MAX(CheckOut)) AS nextAvailableCheckIn FROM mjlong.lab7_reservations GROUP BY Room ), MostRecentStay AS ( SELECT min_res.Room, DATEDIFF(CheckOut, CheckIn) AS Duration, CheckOut FROM ( SELECT Room, MIN(dt) AS mindt FROM ( SELECT Room, CheckIn, CheckOut, DATEDIFF(CURDATE(), Checkout) as dt FROM mjlong.lab7_reservations WHERE DATEDIFF(CURDATE(), Checkout) > 0 ) recent_res GROUP BY Room ) min_res JOIN ( SELECT Room, CheckIn, CheckOut, DATEDIFF(CURDATE(), Checkout) as dt FROM mjlong.lab7_reservations WHERE DATEDIFF(CURDATE(), Checkout) > 0 ) recent_res ON min_res.mindt = recent_res.dt AND recent_res.room = min_res.room ) SELECT rm.RoomCode, rm.RoomName, rm.Beds, rm.bedType, rm.maxOcc, rm.basePrice, rm.decor, occ_score, nextAvailableCheckIn, Duration, CheckOut FROM RoomPopularity AS rp JOIN nextAvailCheckIn AS nc ON rp.Room = nc.Room JOIN MostRecentStay AS mr ON mr.Room = rp.Room JOIN mjlong.lab7_rooms AS rm ON RoomCode = mr.Room ORDER BY occ_score DESC";
 
 			try (Statement stmt = conn.createStatement();
 				 ResultSet rs = stmt.executeQuery(q3)) {
@@ -110,6 +143,8 @@ public class InnReservations {
 					);
 				}
 			}
+
+			return 0;
 		}
 	}
 
@@ -256,31 +291,38 @@ public class InnReservations {
 
 		int newReservationCode = get_max_reservation_id(conn) + 1;
 
-		PreparedStatement insertPstmt = conn.prepareStatement(String.format(
-				"INSERT INTO mjlong.`lab7_reservations` " +
-					"(CODE, Room, CheckIn, CheckOut, Rate, LastName, FirstName, Adults, Kids)" +
-					"VALUES (%d, '%s', '%s', '%s', %,.2f, '%s', '%s', %d, %d)",
-				newReservationCode,
-				availableRooms.get(selection - 1).get(0),
-				checkIn,
-				checkOut,
-				totalCost / (weekendsAndWeekdays.get(0) + weekendsAndWeekdays.get(1)),
-				lastName.toUpperCase(),
-				firstName.toUpperCase(),
-				numAdults,
-				numChildren
-		));
+		conn.setAutoCommit(false);
 
-		int updatedRows = insertPstmt.executeUpdate();
+		try {
+			PreparedStatement insertPstmt = conn.prepareStatement(String.format(
+					"INSERT INTO mjlong.`lab7_reservations` " +
+							"(CODE, Room, CheckIn, CheckOut, Rate, LastName, FirstName, Adults, Kids)" +
+							"VALUES (%d, '%s', '%s', '%s', %,.2f, '%s', '%s', %d, %d)",
+					newReservationCode,
+					availableRooms.get(selection - 1).get(0),
+					checkIn,
+					checkOut,
+					totalCost / (weekendsAndWeekdays.get(0) + weekendsAndWeekdays.get(1)),
+					lastName.toUpperCase(),
+					firstName.toUpperCase(),
+					numAdults,
+					numChildren
+			));
 
-		if (updatedRows > 0) {
-			System.out.println("Successfully booked your reservation. See you then!");
-		} else {
-			System.out.println("ERROR: Could not book your reservation.");
+			int updatedRows = insertPstmt.executeUpdate();
+
+			if (updatedRows > 0) {
+				System.out.println("Successfully booked your reservation. See you then!");
+			} else {
+				System.out.println("ERROR: Could not book your reservation.");
+			}
+
+			conn.commit();
+			return 0;
+		} catch (SQLException e) {
+			conn.rollback();
 			return 1;
 		}
-
-		return 0;
 	}
 
 	private int get_max_occ(Connection conn) throws SQLException {
@@ -300,6 +342,7 @@ public class InnReservations {
 		try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
 				System.getenv("HP_JDBC_USER"),
 				System.getenv("HP_JDBC_PW"))) {
+			conn.setAutoCommit(false);
 
 			get_max_occ(conn);
 			Scanner scanner = new Scanner(System.in);
@@ -484,22 +527,30 @@ public class InnReservations {
 				)
 		);
 
-		PreparedStatement pstmt = conn.prepareStatement(sb.toString());
+		conn.setAutoCommit(false);
 
-		int i = 1;
-		for (Object p : params) {
-			pstmt.setObject(i++, p);
-		}
-		pstmt.setObject(i, code);
+		try {
+			PreparedStatement pstmt = conn.prepareStatement(sb.toString());
 
-		int updatedRows = pstmt.executeUpdate();
+			int i = 1;
+			for (Object p : params) {
+				pstmt.setObject(i++, p);
+			}
+			pstmt.setObject(i, code);
 
-		if (updatedRows == 0) {
-			System.out.println("Unable to update reservation.");
-			return 1;
-		} else {
-			System.out.format("Successfully updated reservation %s.", code);
+			int updatedRows = pstmt.executeUpdate();
+
+			if (updatedRows == 0) {
+				System.out.println("Unable to update reservation.");
+			} else {
+				System.out.format("Successfully updated reservation %s.", code);
+			}
+
+			conn.commit();
 			return 0;
+		} catch (SQLException e) {
+			conn.rollback();
+			return 1;
 		}
 	}
 
@@ -592,7 +643,7 @@ public class InnReservations {
 		}
 	}
 
-	private void cancel_reservation() throws SQLException {
+	private int cancel_reservation() throws SQLException {
 		System.out.println("FR4: Cancel Reservation\r\n");
 		init_connection();
 
@@ -605,13 +656,15 @@ public class InnReservations {
 
 			int code = Integer.parseInt(scanner.nextLine());
 
-			String fetch_reservation_query = ("SELECT * FROM lab7_reservations WHERE CODE = ?");
-			String delete_row = ("DELETE FROM lab7_reservations WHERE CODE = ?");
+			String fetch_reservation_query = ("SELECT * FROM mjlong.lab7_reservations WHERE CODE = ?");
+			String delete_row = ("DELETE FROM mjlong.lab7_reservations WHERE CODE = ?");
 
 
 			StringBuilder sb = new StringBuilder(delete_row);
 			List<Object> params = new ArrayList<Object>();
 			params.add(code);
+
+			conn.setAutoCommit(false);
 
 			// Execute Query
 			try (PreparedStatement pstmt = conn.prepareStatement(sb.toString())) {
@@ -628,6 +681,12 @@ public class InnReservations {
 				else {
 					System.out.format("No reservation found with code %d %n", code);
 				}
+
+				conn.commit();
+				return 0;
+			} catch (SQLException e) {
+				conn.rollback();
+				return 1;
 			}
 		}
 	}
@@ -658,7 +717,7 @@ public class InnReservations {
 			String reservationCode = scanner.nextLine();
 			
 			String baseQuery = (
-				"SELECT RoomName, lab7_reservations.* FROM lab7_reservations JOIN lab7_rooms ON Room = RoomCode WHERE FirstName LIKE ? AND LastName LIKE ? AND Room LIKE ? AND CODE LIKE ?");
+				"SELECT RoomName, mjlong.lab7_reservations.* FROM mjlong.lab7_reservations JOIN mjlong.lab7_rooms ON Room = RoomCode WHERE FirstName LIKE ? AND LastName LIKE ? AND Room LIKE ? AND CODE LIKE ?");
 
 			// Build query string
 			StringBuilder sb = new StringBuilder(baseQuery);
@@ -748,7 +807,7 @@ public class InnReservations {
 			String firstDate = year + "-01-01";
 			String secondDate = year + "-12-31";
 			
-			String monthQuery = "with raw_data AS ( with dates (selected_date) AS (SELECT selected_date FROM (SELECT adddate('2010-01-01',time4.i*10000 + time3.i*1000 + time2.i*100 + time1.i*10 + time0.i) selected_date FROM (SELECT 0 i union select 1 union select 2 union select 3 union SELECT 4 union select 5 union select 6 union select 7 union SELECT 8 union select 9) time0, (SELECT 0 i union select 1 union select 2 union select 3 union SELECT 4 union select 5 union select 6 union select 7 union SELECT 8 union select 9) time1, (SELECT 0 i union select 1 union select 2 union select 3 union SELECT 4 union select 5 union select 6 union select 7 union SELECT 8 union select 9) time2, (SELECT 0 i union select 1 union select 2 union select 3 union SELECT 4 union select 5 union select 6 union select 7 union SELECT 8 union select 9) time3, (SELECT 0 i union select 1 union select 2 union select 3 union SELECT 4 union select 5 union select 6 union select 7 union SELECT 8 union select 9) time4) v where selected_date between ? and ? order by selected_date ), rooms (Room) as (select distinct Room from lab7_reservations) select distinct rooms.Room, dates.selected_date, IFNULL((select sum(r.rate) from lab7_reservations r where dates.selected_date between checkIn and (checkOut - 1) and r.Room=rooms.Room group by dates.selected_date), 0) rate from dates, rooms, lab7_reservations r1 where rooms.Room = r1.Room order by dates.selected_date ), revenue AS ( SELECT Room, ROUND(SUM( CASE WHEN MONTH(selected_date) = 1 THEN rate ELSE 0 END),0) AS January, ROUND(SUM( CASE WHEN MONTH(selected_date) = 2 THEN rate ELSE 0 END),0) AS February, ROUND(SUM( CASE WHEN MONTH(selected_date) = 3 THEN rate ELSE 0 END),0) AS March, ROUND(SUM( CASE WHEN MONTH(selected_date) = 4 THEN rate ELSE 0 END),0) AS April, ROUND(SUM( CASE WHEN MONTH(selected_date) = 5 THEN rate ELSE 0 END),0) AS May, ROUND(SUM( CASE WHEN MONTH(selected_date) = 6 THEN rate ELSE 0 END),0) AS June, ROUND(SUM( CASE WHEN MONTH(selected_date) = 7 THEN rate ELSE 0 END),0) AS July, ROUND(SUM( CASE WHEN MONTH(selected_date) = 8 THEN rate ELSE 0 END),0) AS August, ROUND(SUM( CASE WHEN MONTH(selected_date) = 9 THEN rate ELSE 0 END),0) AS September, ROUND(SUM( CASE WHEN MONTH(selected_date) = 10 THEN rate ELSE 0 END),0) AS October, ROUND(SUM( CASE WHEN MONTH(selected_date) = 11 THEN rate ELSE 0 END),0) AS November, ROUND(SUM( CASE WHEN MONTH(selected_date) = 12 THEN rate ELSE 0 END),0) AS December, ROUND(SUM(rate),0) AS Yearly FROM raw_data GROUP BY Room ) select Room, January, February, March, April, May, June, July, August, September, October, November, December, Yearly FROM revenue";
+			String monthQuery = "with raw_data AS ( with dates (selected_date) AS (SELECT selected_date FROM (SELECT adddate('2010-01-01',time4.i*10000 + time3.i*1000 + time2.i*100 + time1.i*10 + time0.i) selected_date FROM (SELECT 0 i union select 1 union select 2 union select 3 union SELECT 4 union select 5 union select 6 union select 7 union SELECT 8 union select 9) time0, (SELECT 0 i union select 1 union select 2 union select 3 union SELECT 4 union select 5 union select 6 union select 7 union SELECT 8 union select 9) time1, (SELECT 0 i union select 1 union select 2 union select 3 union SELECT 4 union select 5 union select 6 union select 7 union SELECT 8 union select 9) time2, (SELECT 0 i union select 1 union select 2 union select 3 union SELECT 4 union select 5 union select 6 union select 7 union SELECT 8 union select 9) time3, (SELECT 0 i union select 1 union select 2 union select 3 union SELECT 4 union select 5 union select 6 union select 7 union SELECT 8 union select 9) time4) v where selected_date between ? and ? order by selected_date ), rooms (Room) as (select distinct Room from mjlong.lab7_reservations) select distinct rooms.Room, dates.selected_date, IFNULL((select sum(r.rate) from mjlong.lab7_reservations r where dates.selected_date between checkIn and (checkOut - 1) and r.Room=rooms.Room group by dates.selected_date), 0) rate from dates, rooms, mjlong.lab7_reservations r1 where rooms.Room = r1.Room order by dates.selected_date ), revenue AS ( SELECT Room, ROUND(SUM( CASE WHEN MONTH(selected_date) = 1 THEN rate ELSE 0 END),0) AS January, ROUND(SUM( CASE WHEN MONTH(selected_date) = 2 THEN rate ELSE 0 END),0) AS February, ROUND(SUM( CASE WHEN MONTH(selected_date) = 3 THEN rate ELSE 0 END),0) AS March, ROUND(SUM( CASE WHEN MONTH(selected_date) = 4 THEN rate ELSE 0 END),0) AS April, ROUND(SUM( CASE WHEN MONTH(selected_date) = 5 THEN rate ELSE 0 END),0) AS May, ROUND(SUM( CASE WHEN MONTH(selected_date) = 6 THEN rate ELSE 0 END),0) AS June, ROUND(SUM( CASE WHEN MONTH(selected_date) = 7 THEN rate ELSE 0 END),0) AS July, ROUND(SUM( CASE WHEN MONTH(selected_date) = 8 THEN rate ELSE 0 END),0) AS August, ROUND(SUM( CASE WHEN MONTH(selected_date) = 9 THEN rate ELSE 0 END),0) AS September, ROUND(SUM( CASE WHEN MONTH(selected_date) = 10 THEN rate ELSE 0 END),0) AS October, ROUND(SUM( CASE WHEN MONTH(selected_date) = 11 THEN rate ELSE 0 END),0) AS November, ROUND(SUM( CASE WHEN MONTH(selected_date) = 12 THEN rate ELSE 0 END),0) AS December, ROUND(SUM(rate),0) AS Yearly FROM raw_data GROUP BY Room ) select Room, January, February, March, April, May, June, July, August, September, October, November, December, Yearly FROM revenue";
 			// Build query string
 			StringBuilder sb = new StringBuilder(monthQuery);
 			
@@ -769,7 +828,7 @@ public class InnReservations {
 					System.out.println("Room, January, February, March, April, May, June, July, August, September, October, November, December");
 					while (rs.next()) {
 						System.out.format(
-								"%s %d %d %d, %d, %d, %d, %d, %d, %d, %d, %d, %d %d %n",
+								"%s,  %d,  %d,  %d,  %d,  %d,  %d,  %d,  %d,  %d,  %d,  %d,  %d,  %d,  %n",
 								rs.getString("Room"),
 								rs.getInt("January"),
 								rs.getInt("February"),
