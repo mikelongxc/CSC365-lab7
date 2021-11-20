@@ -52,7 +52,7 @@ public class InnReservations {
 			switch (demoNum) {
 				case 1: ir.rooms_and_rates(); break;
 				case 2: ir.reservations(); break;
-				case 3: ir.demo3(); break;
+				case 3: ir.change_reservation(); break;
 				case 4: ir.cancel_reservation(); break;
 				case 5: ir.detailed_reservations(); break;
 			}
@@ -265,7 +265,7 @@ public class InnReservations {
 
 		PreparedStatement insertPstmt = conn.prepareStatement(String.format(
 				"INSERT INTO mjlong.`lab7_reservations` " +
-					"(CODE, Room, CheckIn, CheckOut, Rate, LastName, FirstName, Adults, Kids)" +
+					"(CODE, Room, CheckIn, Checkout, Rate, LastName, FirstName, Adults, Kids)" +
 					"VALUES (%d, '%s', '%s', '%s', %,.2f, '%s', '%s', %d, %d)",
 				newReservationCode,
 				availableRooms.get(selection - 1).get(0),
@@ -344,7 +344,7 @@ public class InnReservations {
 					"WHERE Rooms.RoomCode NOT IN (" +
 						"SELECT r2.Room " +
 							"FROM mjlong.lab7_reservations r2 " +
-							"WHERE r2.CheckIn < ? AND r2.CheckOut > ? " +
+							"WHERE r2.CheckIn < ? AND r2.Checkout > ? " +
 					") AND ? + ? <= Rooms.maxOcc"
 			);
 
@@ -429,150 +429,175 @@ public class InnReservations {
 		}
 	}
 
+	private boolean check_for_conflicting_reservations(
+			Connection conn,
+			String reservationCode,
+			String roomCode,
+			String checkIn,
+			String checkOut,
+			String numChildren,
+			String numAdults
+	) throws SQLException {
+		StringBuilder sb = new StringBuilder(
+				String.format("SELECT DISTINCT RoomCode FROM mjlong.lab7_rooms Rooms " +
+						"WHERE Rooms.RoomCode NOT IN (" +
+							"SELECT r2.Room " +
+								"FROM mjlong.lab7_reservations r2 " +
+								"WHERE r2.CheckIn < '%s' AND r2.Checkout > '%s' AND NOT r2.CODE = '%s' " +
+						") AND %s + %s <= Rooms.maxOcc " +
+						"AND Rooms.RoomCode = '%s'",
+						checkOut,
+						checkIn,
+						reservationCode,
+						numChildren,
+						numAdults,
+						roomCode
+				)
+		);
 
-	private void cancel_reservation() throws SQLException {
-		System.out.println("FR4: Cancel Reservation\r\n");
+		PreparedStatement pstmt = conn.prepareStatement(sb.toString());
+
+		ResultSet rs = pstmt.executeQuery();
+
+		if (rs.next() == false) {
+			System.out.println("ERROR: reservation change conflicts with existing reservation.");
+			return false;
+		} else {
+			return true;
+		}
+	}
+
+	private ResultSet get_reservation(Connection conn, String code) throws SQLException {
+		StringBuilder sb = new StringBuilder(
+			"SELECT * FROM mjlong.lab7_reservations " +
+				"WHERE CODE = ?"
+		);
+
+		PreparedStatement pstmt = conn.prepareStatement(sb.toString());
+
+		pstmt.setObject(1, code);
+
+		ResultSet rs = pstmt.executeQuery();
+
+		return rs;
+	}
+
+	private int update_reservation(Connection conn, String code, String updateString, List<Object> params) throws SQLException {
+		StringBuilder sb = new StringBuilder(
+				String.format("UPDATE mjlong.lab7_reservations " +
+						"SET %s " +
+						"WHERE CODE = ?",
+						updateString
+				)
+		);
+
+		PreparedStatement pstmt = conn.prepareStatement(sb.toString());
+
+		int i = 1;
+		for (Object p : params) {
+			pstmt.setObject(i++, p);
+		}
+		pstmt.setObject(i, code);
+
+		int updatedRows = pstmt.executeUpdate();
+
+		if (updatedRows == 0) {
+			System.out.println("Unable to update reservation.");
+			return 1;
+		} else {
+			System.out.format("Successfully updated reservation %s.", code);
+			return 0;
+		}
+	}
+
+	private int change_reservation() throws SQLException {
+		String roomCode = new String();
+		String firstName = new String();
+		String lastName = new String();
+		String checkIn = new String();
+		String checkOut = new String();
+		String childCount = new String();
+		String adultCount = new String();
+
+		System.out.println("FR3: Reservation Change\n");
 		init_connection();
 
 		try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
 				System.getenv("HP_JDBC_USER"),
 				System.getenv("HP_JDBC_PW"))) {
-			// Get Query Params
 			Scanner scanner = new Scanner(System.in);
-			System.out.print("Enter the code of the reservation you would like to cancel: ");
+			System.out.print("Enter the code of your reservation: ");
+			String reservationCode = scanner.nextLine();
+			System.out.print("Enter new first name (or 'no change' to leave unchanged): ");
+			String newFirstName = scanner.nextLine();
+			System.out.print("Enter new last name (or 'no change' to leave unchanged): ");
+			String newLastName = scanner.nextLine();
+			System.out.print("Enter new check in date (or 'no change' to leave unchanged): ");
+			String newCheckIn = scanner.nextLine();
+			System.out.print("Enter new check out date (or 'no change' to leave unchanged): ");
+			String newCheckOut = scanner.nextLine();
+			System.out.print("Enter new child count (or 'no change' to leave unchanged): ");
+			String newChildCount = scanner.nextLine();
+			System.out.print("Enter new adult count (or 'no change' to leave unchanged): ");
+			String newAdultCount = scanner.nextLine();
 
-			int code = Integer.parseInt(scanner.nextLine());
+			String updateString = new String();
 
-			String fetch_reservation_query = ("SELECT * FROM lab7_reservations WHERE CODE = ?");
-			String delete_row = ("DELETE FROM lab7_reservations WHERE CODE = ?");
-
-
-			StringBuilder sb = new StringBuilder(delete_row);
-			List<Object> params = new ArrayList<Object>();
-			params.add(code);
-
-			// Execute Query
-			try (PreparedStatement pstmt = conn.prepareStatement(sb.toString())) {
-				int i = 1;
-				for (Object p : params) {
-					pstmt.setObject(i++, p);
-				}
-
-				int r_deleted = pstmt.executeUpdate();
-
-				if (r_deleted == 1){
-					System.out.println("Reservation successfully deleted");
-				}
-				else {
-					System.out.format("No reservation found with code %d %n", code);
-				}
-			}
-		}
-	}
-
-	private void detailed_reservations() throws SQLException {
-		System.out.println("FR5: Detailed reservation information\r\n");
-
-    	init_connection();
-
-		try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
-				System.getenv("HP_JDBC_USER"),
-				System.getenv("HP_JDBC_PW"))) {
-			// Get Query Params
-			Scanner scanner = new Scanner(System.in);
-			System.out.print("Enter first name: ");
-			String firstName = scanner.nextLine();
-			System.out.print("Enter last name: ");
-			String lastName = scanner.nextLine();
-			System.out.print("Enter first date in range: ");
-			String dateRange1 = scanner.nextLine();
-			System.out.print("Enter second date in range: ");
-			String dateRange2 = scanner.nextLine();
-			System.out.print("Enter desired room code: ");
-			String roomCode = scanner.nextLine();
-			System.out.print("Enter desired reservation code: ");
-			int reservationCode = Integer.parseInt(scanner.nextLine());
-			
-			String availableRoomsQuery = (
-				"SELECT RoomName, lab7_reservations.* FROM lab7_reservations JOIN lab7_rooms ON Room = RoomCode");
-
-			// Build query string
-			StringBuilder sb = new StringBuilder(availableRoomsQuery);
-
-			List<Object> params = new ArrayList<Object>();
-			params.add(firstName);
-			params.add(lastName);
-			params.add(dateRange1);
-			params.add(dateRange2);
-			params.add(roomCode);
-
-			if (!"any".equalsIgnoreCase(roomCode)) {
-				exactSb.append(" AND RoomCode = ?");
-				params.add(roomCode);
-			}
-
-			String matchType = "exact match";
-
-			List<List<Object>> availableRooms = query_for_room_matches(exactSb, params, conn);
-
-			if (availableRooms.size() == 0) {
-				boolean flag = false;
-				while (params.size() > 4) {
-					params.remove(4);
-				}
-
-				matchType = "close match";
-
-				StringBuilder similarSb = new StringBuilder(availableRoomsQuery);
-
-				String operator = " AND (";
-
-				if (!"any".equalsIgnoreCase(roomCode)) {
-					flag = true;
-					similarSb.append(operator);
-					similarSb.append(" decor IN (SELECT decor FROM mjlong.lab7_rooms WHERE RoomCode = ?)");
-					params.add(roomCode);
-				}
-				if (flag) {
-					similarSb.append(")");
-				}
-
-				availableRooms = query_for_room_matches(similarSb, params, conn);
-			}
-
-			if (availableRooms.size() == 0) {
-				System.out.println("No matches found for your requested date range.");
+			ResultSet rs = get_reservation(conn, reservationCode);
+			if (rs.first() == false) {
+				System.out.println("No matching reservation found.");
 				return 1;
 			} else {
-				display_available_rooms(availableRooms);
+				roomCode = rs.getString("Room");
+				firstName = rs.getString("FirstName");
+				lastName = rs.getString("LastName");
+				checkIn = rs.getString("CheckIn");
+				checkOut = rs.getString("Checkout");
+				childCount = rs.getString("Kids");
+				adultCount = rs.getString("Adults");
 			}
 
-			System.out.format("----------------------%nFound %d %s%s %n", availableRooms.size(), matchType, availableRooms.size() == 1 ? "" : "es");
+			List<Object> params = new ArrayList<Object>();
 
-			System.out.println("\nSelect one of the room options by number or 'q' to cancel reservation: ");
-			String selection = scanner.nextLine();
-			while (!"q".equalsIgnoreCase(selection) && (Integer.parseInt(selection) < 1 || Integer.parseInt(selection) > availableRooms.size())) {
-				System.out.println("Invalid selection. Please select one of the reservation numbers above or 'q' to cancel: ");
-				selection = scanner.nextLine();
+			if (!"no change".equalsIgnoreCase(newFirstName)) {
+				updateString = updateString + ("FirstName = ?, ");
+				firstName = newFirstName;
+				params.add(newFirstName);
 			}
-			if ("q".equalsIgnoreCase(selection)) {
+			if (!"no change".equalsIgnoreCase(newLastName)) {
+				updateString = updateString + ("LastName = ?, ");
+				lastName = newLastName;
+				params.add(newLastName);
+			}
+			if (!"no change".equalsIgnoreCase(newCheckIn)) {
+				updateString = updateString + ("CheckIn = ?, ");
+				checkIn = newCheckIn;
+				params.add(newCheckIn);
+			}
+			if (!"no change".equalsIgnoreCase(newCheckOut)) {
+				updateString = updateString + ("Checkout = ?, ");
+				checkOut = newCheckOut;
+				params.add(newCheckOut);
+			}
+			if (!"no change".equalsIgnoreCase(newChildCount)) {
+				updateString = updateString + (String.format("Kids = ?, "));
+				childCount = newChildCount;
+				params.add(newChildCount);
+			}
+			if (!"no change".equalsIgnoreCase(newAdultCount)) {
+				updateString = updateString + ("Adults = ?, ");
+				adultCount = newAdultCount;
+				params.add(newAdultCount);
+			}
+			updateString = updateString.substring(0, updateString.length() - 2);
+
+			if (check_for_conflicting_reservations(conn, reservationCode, roomCode, checkIn, checkOut, childCount, adultCount)) {
+				return update_reservation(conn, reservationCode, updateString, params);
+			} else {
 				return 1;
 			}
-
-			return select_room_reservation(
-					conn,
-					Integer.parseInt(selection),
-					availableRooms,
-					firstName,
-					lastName,
-					checkIn,
-					checkOut,
-					numAdults,
-					numChildren
-			);
 		}
 	}
-
 
 	private void cancel_reservation() throws SQLException {
 		System.out.println("FR4: Cancel Reservation\r\n");
