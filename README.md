@@ -22,7 +22,7 @@ No known bugs
 
 **Contributions**: <br />
 
-####hpigg:
+###### hpigg:
 * FR2
 * FR3
     * git log shows mjlong commited the FR3 merge. The merge had a rediculous amount of complicated 
@@ -30,7 +30,7 @@ No known bugs
 * CLI
 * Transaction Control <br />
 
-####mjlong:
+###### mjlong:
 * FR1
 * FR4
 * FR5
