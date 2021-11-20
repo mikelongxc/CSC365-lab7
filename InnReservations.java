@@ -474,6 +474,8 @@ public class InnReservations {
 
 		init_connection();
 
+		//int reservationCode = 0
+
 		try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
 				System.getenv("HP_JDBC_USER"),
 				System.getenv("HP_JDBC_PW"))) {
@@ -483,36 +485,62 @@ public class InnReservations {
 			String firstName = scanner.nextLine();
 			System.out.print("Enter last name: ");
 			String lastName = scanner.nextLine();
-			System.out.print("Enter first date in range: ");
+			System.out.print("Enter first date where all reservations must be greater than (or equal to): ");
 			String dateRange1 = scanner.nextLine();
-			System.out.print("Enter second date in range: ");
+			System.out.print("Enter second date where all reservations must be less than (or equal to): ");
 			String dateRange2 = scanner.nextLine();
 			System.out.print("Enter desired room code: ");
 			String roomCode = scanner.nextLine();
 			System.out.print("Enter desired reservation code: ");
-			String reservationCodeStr = scanner.nextLine();
+			String reservationCode = scanner.nextLine();
+
+			/*
 			if (reservationCodeStr != "") {
-				int reservationCode = Integer.parseInt(reservationCodeStr);
-			}
+				reservationCode = Integer.parseInt(reservationCodeStr);
+			}*/
+
+			//TODO make sure user date1 is not greater than date2
 			
 			String baseQuery = (
-				"SELECT RoomName, lab7_reservations.* FROM lab7_reservations JOIN lab7_rooms ON Room = RoomCode");
+				"SELECT RoomName, lab7_reservations.* FROM lab7_reservations JOIN lab7_rooms ON Room = RoomCode WHERE FirstName LIKE ? AND LastName LIKE ? AND Room LIKE ? AND CODE LIKE ?");
 
 			// Build query string
 			StringBuilder sb = new StringBuilder(baseQuery);
 			
 			List<Object> params = new ArrayList<Object>();
 
+			firstName = firstName + "%";
+			lastName = lastName + "%";
+			roomCode = roomCode + "%";
+			reservationCode = reservationCode + "%";
+
 			params.add(firstName);
 			params.add(lastName);
-			params.add(dateRange1);
-			params.add(dateRange2);
 			params.add(roomCode);
-			if (!"any".equalsIgnoreCase(firstName)) {
-				sb.append(" AND FirstName = ?");
-				params.add(firstName);
-			} 
+			params.add(reservationCode);
 
+			// both dates are specified
+			if (!dateRange1.equals("") && !dateRange2.equals("")) {
+				sb.append(" AND ((CheckIn >= ? AND CheckOut <= ?) OR (CheckIn <= ? AND CheckOut >= ?))");
+				params.add(dateRange1);
+				params.add(dateRange2);
+				params.add(dateRange2);
+				params.add(dateRange1);
+
+			}
+			// only first date is specified
+			else if (!dateRange1.equals("") && dateRange2.equals("")) {
+				sb.append(" AND (CheckIn >= ? OR CheckOut >= ?)");
+				params.add(dateRange1);
+				params.add(dateRange1);
+
+			}
+			else if (dateRange1.equals("") && !dateRange2.equals("")) {
+				sb.append(" AND (CheckIn <= ? OR CheckOut <= ?)");
+				params.add(dateRange2);
+				params.add(dateRange2);
+			}
+		
 			// Execute Query
 			try (PreparedStatement pstmt = conn.prepareStatement(sb.toString())) {
 				int i = 1;
@@ -522,7 +550,7 @@ public class InnReservations {
 
 				try (ResultSet rs = pstmt.executeQuery()) {
 					System.out.format("%nReservations:%n");
-					int matchCount = 0;
+					System.out.println("RoomName,CODE,Room,CheckIn,CheckOut,Rate,LastName,FirstName,Adults,Kids");
 					while (rs.next()) {
 						System.out.format(
 								"%s, %d, %s, %s, %s, ($%.2f), %s, %s, %d, %d %n",
@@ -537,41 +565,15 @@ public class InnReservations {
 								rs.getInt("Adults"),
 								rs.getInt("Kids")
 						);
-						matchCount++;
 					}
 
-					if (matchCount == 0) {
-						PreparedStatement similarpstmt = conn.prepareStatement(
-								new StringBuilder(baseQuery).toString()
-						);
-						i = 1;
-						for (Object p : params) {
-							if (i < 5) {
-								similarpstmt.setObject(i++, p);
-							}
-						}
-
-						try(ResultSet similarrs = similarpstmt.executeQuery()) {
-							System.out.format("No exact matches found. Here are some similar available rooms:%n");
-							matchCount = 0;
-							while (similarrs.next()) {
-								System.out.format(
-										"%s %s %s %n",
-										similarrs.getString("RoomCode"),
-										similarrs.getString("bedType"),
-										similarrs.getString("decor")
-								);
-								matchCount++;
-							}
-						}
-					}
-
-					System.out.format("----------------------%nFound %d match%s %n", matchCount, matchCount == 1 ? "" : "es");
+					
 				}
+
 			}
+		}
 
 			// Step 6: (omitted in this example) Commit or rollback transaction
-		}
 	}
 
 
