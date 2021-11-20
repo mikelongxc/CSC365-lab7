@@ -6,7 +6,7 @@ Henry Pigg (hpigg@calpoly.edu) <br />
 
 Database worked out of: mjlong
 
-**Compile/Runtime instructions:**
+**Compile/Runtime instructions:** <br />
 _From the console with JDBS driver jar in same dir.: _ <br />
 export CLASSPATH=$CLASSPATH:mysql-connector-java-8.0.16.jar:. <br />
 export HP_JDBC_URL=jdbc:mysql://db.labthreesixfive.com/mjlong?autoReconnect=true\&useSSL=false <br />
