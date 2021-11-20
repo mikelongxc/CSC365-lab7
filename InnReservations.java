@@ -624,7 +624,6 @@ public class InnReservations {
 
 				if (r_deleted == 1){
 					System.out.println("Reservation successfully deleted");
-					conn.commit();
 				}
 				else {
 					System.out.format("No reservation found with code %d %n", code);
@@ -795,6 +794,5 @@ public class InnReservations {
 		}
 
 	}
-
 
 }
