@@ -6,7 +6,7 @@ Henry Pigg (hpigg@calpoly.edu) <br />
 
 Database worked out of: mjlong
 
-###Compile/Runtime instructions: <br />
+**Compile/Runtime instructions**: <br />
 _From the console with JDBS driver jar in same dir.: _ <br />
 export CLASSPATH=$CLASSPATH:mysql-connector-java-8.0.16.jar:. <br />
 export HP_JDBC_URL=jdbc:mysql://db.labthreesixfive.com/mjlong?autoReconnect=true\&useSSL=false <br />
@@ -17,17 +17,17 @@ java InnReservations <br />
 
 All runtime instructions are given within CLI.
 
-###Known bugs:
+**Known bugs**:
 No known bugs
 
-###Contributions:
+***Contributions***:
 ####hpigg:
 * FR2
 * FR3
     * git log shows mjlong commited the FR3 merge. The merge had a rediculous amount of complicated 
     conflicts, so I pushed the changes to a new branch and mjlong merged in the changes.
 * CLI
-* Transaction Control
+* Transaction Control <br />
 ####mjlong:
 * FR1
 * FR4
