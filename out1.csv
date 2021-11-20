@@ -1,0 +1,15 @@
+FR1: Rooms and rates
+
+MySQL JDBC Driver loaded
+RoomCode,RoomName,Beds,bedType,maxOcc,basePrice,decor,occ_score,nextAvailableCheckIn,Duration,CheckOut
+SAY, Stay all year, 1, Queen, 3, 100, modern, 2.03, 2022-01-15, 8 2019-12-10 
+AOB, Abscond or bolster, 2, Queen, 4, 175, traditional, 0.68, 2022-01-01, 3 2021-11-03 
+CAS, Convoke and sanguine, 2, King, 4, 175, traditional, 0.64, 2022-01-08, 1 2021-11-16 
+RND, Recluse and defiance, 1, King, 2, 150, modern, 0.61, 2022-01-10, 3 2021-11-15 
+TAA, Thrift and accolade, 1, Double, 2, 75, modern, 0.61, 2022-01-12, 4 2021-11-08 
+MWC, Mendicant with cryptic, 2, Double, 4, 125, modern, 0.59, 2022-01-04, 1 2021-11-12 
+IBD, Immutable before decorum, 2, Queen, 4, 150, rustic, 0.58, 2022-01-01, 3 2021-11-10 
+HBB, Harbinger but bequest, 1, Queen, 2, 100, modern, 0.57, 2022-01-06, 1 2021-11-18 
+FNA, Frugal not apropos, 2, King, 4, 250, traditional, 0.52, 2022-01-04, 1 2021-11-17 
+IBS, Interim but salutary, 1, King, 2, 150, traditional, 0.52, 2022-01-01, 4 2021-11-15 
+RTE, Riddle to exculpate, 2, Queen, 4, 175, rustic, 0.49, 2022-01-04, 2 2021-11-19 

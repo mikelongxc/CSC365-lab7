@@ -55,6 +55,7 @@ public class InnReservations {
 				case 3: ir.demo3(); break;
 				case 4: ir.cancel_reservation(); break;
 				case 5: ir.detailed_reservations(); break;
+				case 6: ir.revenue(); break;
 			}
 
 		} catch (SQLException e) {
@@ -82,42 +83,34 @@ public class InnReservations {
 
 		init_connection();
 
-
-		// Step 1: Establish connection to RDBMS
 		try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
 				System.getenv("HP_JDBC_USER"),
 				System.getenv("HP_JDBC_PW"))) {
-			// Step 2: Construct SQL statement
-			String sql = "SELECT * FROM mjlong.lab7_rooms";
-
 
 			String q3 = "with RoomPopularity AS ( SELECT Room, ROUND(SUM( CASE WHEN CheckIn >= DATE_ADD(CURDATE(), INTERVAL -180 DAY) AND CheckOut <= CURDATE() THEN DATEDIFF(CheckOut, CheckIn) WHEN CheckIn >= DATE_ADD(CURDATE(), INTERVAL -180 DAY) AND CheckOut > CURDATE() THEN DATEDIFF(CURDATE() , CheckIn) WHEN CheckIn < DATE_ADD(CURDATE(), INTERVAL -180 DAY) AND CheckOut <= CURDATE() THEN DATEDIFF(CheckOut, DATE_ADD(CURDATE(), INTERVAL -180 DAY)) ELSE 365 END)/180,2) AS occ_score FROM lab7_reservations WHERE (CheckOut >= DATE_ADD(CURDATE(), INTERVAL -180 DAY) AND CheckIn <= CURDATE() ) OR (CheckOut > CURDATE() AND CheckIn <= CURDATE() ) GROUP BY Room ORDER BY occ_score DESC ), nextAvailCheckIn AS ( SELECT Room, GREATEST(CURDATE(), MAX(CheckOut)) AS nextAvailableCheckIn FROM lab7_reservations GROUP BY Room ), MostRecentStay AS ( SELECT min_res.Room, DATEDIFF(CheckOut, CheckIn) AS Duration, CheckOut FROM ( SELECT Room, MIN(dt) AS mindt FROM ( SELECT Room, CheckIn, CheckOut, DATEDIFF(CURDATE(), Checkout) as dt FROM lab7_reservations WHERE DATEDIFF(CURDATE(), Checkout) > 0 ) recent_res GROUP BY Room ) min_res JOIN ( SELECT Room, CheckIn, CheckOut, DATEDIFF(CURDATE(), Checkout) as dt FROM lab7_reservations WHERE DATEDIFF(CURDATE(), Checkout) > 0 ) recent_res ON min_res.mindt = recent_res.dt AND recent_res.room = min_res.room ) SELECT rm.RoomCode, rm.RoomName, rm.Beds, rm.bedType, rm.maxOcc, rm.basePrice, rm.decor, occ_score, nextAvailableCheckIn, Duration, CheckOut FROM RoomPopularity AS rp JOIN nextAvailCheckIn AS nc ON rp.Room = nc.Room JOIN MostRecentStay AS mr ON mr.Room = rp.Room JOIN lab7_rooms AS rm ON RoomCode = mr.Room ORDER BY occ_score DESC";
-			// Step 3: (omitted in this example) Start transaction
 
 			try (Statement stmt = conn.createStatement();
-				 ResultSet rs = stmt.executeQuery(sql)) {
+				 ResultSet rs = stmt.executeQuery(q3)) {
 
-				// Step 5: Receive results
+				System.out.println("RoomCode,RoomName,Beds,bedType,maxOcc,basePrice,decor,occ_score,nextAvailableCheckIn,Duration,CheckOut");
 				while (rs.next()) {
-					String RoomCode = rs.getString("RoomCode");
-					String RoomName = rs.getString("RoomName");
-					int Beds = rs.getInt("Beds");
-					String bedType = rs.getString("bedType");
-					int maxOcc = rs.getInt("maxOcc");
-					int basePrice = rs.getInt("basePrice");
-					String decor = rs.getString("decor");
-					float occ_score = rs.getInt("occ_score"); // (.2%f)
-					String next_avail = rs.getString("nextAvailableCheckIn");
-					int Duration = rs.getInt("Duration");
-					String CheckOut = rs.getString("CheckOut");
-					System.out.format("%s, %s, %d, %n", RoomCode, RoomName, Beds);
+					System.out.format(
+							"%s, %s, %d, %s, %d, %d, %s, %.2f, %s, %d %s %n",
+							rs.getString("RoomCode"),
+							rs.getString("RoomName"),
+							rs.getInt("Beds"),
+							rs.getString("bedType"),
+							rs.getInt("maxOcc"),
+							rs.getInt("basePrice"),
+							rs.getString("decor"),
+							rs.getFloat("occ_score"),
+							rs.getString("nextAvailableCheckIn"),
+							rs.getInt("Duration"),
+							rs.getString("CheckOut")
+					);
 				}
 			}
-
-			// Step 6: (omitted in this example) Commit or rollback transaction
 		}
-
-
 	}
 
 	private List<Integer> count_weekdays_and_weekends(Date start, Date end) {
@@ -493,13 +486,6 @@ public class InnReservations {
 			String roomCode = scanner.nextLine();
 			System.out.print("Enter desired reservation code: ");
 			String reservationCode = scanner.nextLine();
-
-			/*
-			if (reservationCodeStr != "") {
-				reservationCode = Integer.parseInt(reservationCodeStr);
-			}*/
-
-			//TODO make sure user date1 is not greater than date2
 			
 			String baseQuery = (
 				"SELECT RoomName, lab7_reservations.* FROM lab7_reservations JOIN lab7_rooms ON Room = RoomCode WHERE FirstName LIKE ? AND LastName LIKE ? AND Room LIKE ? AND CODE LIKE ?");
@@ -572,11 +558,24 @@ public class InnReservations {
 
 			}
 		}
+	}
 
-			// Step 6: (omitted in this example) Commit or rollback transaction
+	private void revenue() {
+
 	}
 
 
+	/*
+
+		DELETE ALL BELOW
+		TODO: commit/rollback/transaction
+
+
+
+
+
+
+	*/
 
 	// Demo1 - Establish JDBC connection, execute DDL statement
 	private void demo1() throws SQLException {
