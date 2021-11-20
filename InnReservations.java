@@ -624,6 +624,7 @@ public class InnReservations {
 
 				if (r_deleted == 1){
 					System.out.println("Reservation successfully deleted");
+					conn.commit();
 				}
 				else {
 					System.out.format("No reservation found with code %d %n", code);
@@ -731,7 +732,7 @@ public class InnReservations {
 	}
 
 	private void revenue() throws SQLException {
-		System.out.println("FR5: Detailed reservation information\r\n");
+		System.out.println("FR6: Detailed revenue per year\r\n");
 
 		init_connection();
 
@@ -744,14 +745,18 @@ public class InnReservations {
 			Scanner scanner = new Scanner(System.in);
 			System.out.print("Enter desired year for revenue: ");
 			String year = scanner.nextLine();
+
+			String firstDate = year + "-01-01";
+			String secondDate = year + "-12-31";
 			
-			String baseQuery = "";
+			String monthQuery = "with raw_data AS ( with dates (selected_date) AS (SELECT selected_date FROM (SELECT adddate('2010-01-01',time4.i*10000 + time3.i*1000 + time2.i*100 + time1.i*10 + time0.i) selected_date FROM (SELECT 0 i union select 1 union select 2 union select 3 union SELECT 4 union select 5 union select 6 union select 7 union SELECT 8 union select 9) time0, (SELECT 0 i union select 1 union select 2 union select 3 union SELECT 4 union select 5 union select 6 union select 7 union SELECT 8 union select 9) time1, (SELECT 0 i union select 1 union select 2 union select 3 union SELECT 4 union select 5 union select 6 union select 7 union SELECT 8 union select 9) time2, (SELECT 0 i union select 1 union select 2 union select 3 union SELECT 4 union select 5 union select 6 union select 7 union SELECT 8 union select 9) time3, (SELECT 0 i union select 1 union select 2 union select 3 union SELECT 4 union select 5 union select 6 union select 7 union SELECT 8 union select 9) time4) v where selected_date between ? and ? order by selected_date ), rooms (Room) as (select distinct Room from lab7_reservations) select distinct rooms.Room, dates.selected_date, IFNULL((select sum(r.rate) from lab7_reservations r where dates.selected_date between checkIn and (checkOut - 1) and r.Room=rooms.Room group by dates.selected_date), 0) rate from dates, rooms, lab7_reservations r1 where rooms.Room = r1.Room order by dates.selected_date ), revenue AS ( SELECT Room, ROUND(SUM( CASE WHEN MONTH(selected_date) = 1 THEN rate ELSE 0 END),0) AS January, ROUND(SUM( CASE WHEN MONTH(selected_date) = 2 THEN rate ELSE 0 END),0) AS February, ROUND(SUM( CASE WHEN MONTH(selected_date) = 3 THEN rate ELSE 0 END),0) AS March, ROUND(SUM( CASE WHEN MONTH(selected_date) = 4 THEN rate ELSE 0 END),0) AS April, ROUND(SUM( CASE WHEN MONTH(selected_date) = 5 THEN rate ELSE 0 END),0) AS May, ROUND(SUM( CASE WHEN MONTH(selected_date) = 6 THEN rate ELSE 0 END),0) AS June, ROUND(SUM( CASE WHEN MONTH(selected_date) = 7 THEN rate ELSE 0 END),0) AS July, ROUND(SUM( CASE WHEN MONTH(selected_date) = 8 THEN rate ELSE 0 END),0) AS August, ROUND(SUM( CASE WHEN MONTH(selected_date) = 9 THEN rate ELSE 0 END),0) AS September, ROUND(SUM( CASE WHEN MONTH(selected_date) = 10 THEN rate ELSE 0 END),0) AS October, ROUND(SUM( CASE WHEN MONTH(selected_date) = 11 THEN rate ELSE 0 END),0) AS November, ROUND(SUM( CASE WHEN MONTH(selected_date) = 12 THEN rate ELSE 0 END),0) AS December, ROUND(SUM(rate),0) AS Yearly FROM raw_data GROUP BY Room ) select Room, January, February, March, April, May, June, July, August, September, October, November, December, Yearly FROM revenue";
 			// Build query string
-			StringBuilder sb = new StringBuilder(baseQuery);
+			StringBuilder sb = new StringBuilder(monthQuery);
 			
 			List<Object> params = new ArrayList<Object>();
 
-			//params.add(firstName);
+			params.add(firstDate);
+			params.add(secondDate);
 		
 			// Execute Query
 			try (PreparedStatement pstmt = conn.prepareStatement(sb.toString())) {
@@ -762,20 +767,24 @@ public class InnReservations {
 
 				try (ResultSet rs = pstmt.executeQuery()) {
 					System.out.format("%nReservations:%n");
-					System.out.println("RoomName,CODE,Room,CheckIn,CheckOut,Rate,LastName,FirstName,Adults,Kids");
+					System.out.println("Room, January, February, March, April, May, June, July, August, September, October, November, December");
 					while (rs.next()) {
 						System.out.format(
-								"%s, %d, %s, %s, %s, ($%.2f), %s, %s, %d, %d %n",
-								rs.getString("RoomName"),
-								rs.getInt("CODE"),
+								"%s %d %d %d, %d, %d, %d, %d, %d, %d, %d, %d, %d %d %n",
 								rs.getString("Room"),
-								rs.getString("CheckIn"),
-								rs.getString("CheckOut"),
-								rs.getFloat("Rate"),
-								rs.getString("LastName"),
-								rs.getString("FirstName"),
-								rs.getInt("Adults"),
-								rs.getInt("Kids")
+								rs.getInt("January"),
+								rs.getInt("February"),
+								rs.getInt("March"),
+								rs.getInt("April"),
+								rs.getInt("May"),
+								rs.getInt("June"),
+								rs.getInt("July"),
+								rs.getInt("August"),
+								rs.getInt("September"),
+								rs.getInt("October"),
+								rs.getInt("November"),
+								rs.getInt("December"),
+								rs.getInt("Yearly")
 						);
 					}
 
@@ -785,223 +794,6 @@ public class InnReservations {
 			}
 		}
 
-	}
-
-
-	/*
-
-		DELETE ALL BELOW
-		TODO: commit/rollback/transaction
-
-
-
-
-
-
-	*/
-
-	// Demo1 - Establish JDBC connection, execute DDL statement
-	private void demo1() throws SQLException {
-
-		System.out.println("demo1: Add AvailUntil column to hp_goods table\r\n");
-
-		// Step 0: Load MySQL JDBC Driver
-		// No longer required as of JDBC 2.0  / Java 6
-		try{
-			Class.forName("com.mysql.jdbc.Driver");
-			System.out.println("MySQL JDBC Driver loaded");
-		} catch (ClassNotFoundException ex) {
-			System.err.println("Unable to load JDBC Driver");
-			System.exit(-1);
-		}
-
-		// Step 1: Establish connection to RDBMS
-		try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
-				System.getenv("HP_JDBC_USER"),
-				System.getenv("HP_JDBC_PW"))) {
-			// Step 2: Construct SQL statement
-			String sql = "ALTER TABLE hp_goods ADD COLUMN AvailUntil DATE";
-
-			// Step 3: (omitted in this example) Start transaction
-
-			try (Statement stmt = conn.createStatement()) {
-
-				// Step 4: Send SQL statement to DBMS
-				boolean exRes = stmt.execute(sql);
-
-				// Step 5: Handle results
-				System.out.format("Result from ALTER: %b %n", exRes);
-			}
-
-			// Step 6: (omitted in this example) Commit or rollback transaction
-		}
-		catch (Exception e){
-			System.err.println(e);
-		}
-		// Step 7: Close connection (handled by try-with-resources syntax)
-	}
-
-
-	// Demo2 - Establish JDBC connection, execute SELECT query, read & print result
-	private void demo2() throws SQLException {
-
-		System.out.println("demo2: List content of hp_goods table\r\n");
-
-		// Step 1: Establish connection to RDBMS
-		try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
-				System.getenv("HP_JDBC_USER"),
-				System.getenv("HP_JDBC_PW"))) {
-			// Step 2: Construct SQL statement
-			String sql = "SELECT * FROM hp_goods";
-
-			// Step 3: (omitted in this example) Start transaction
-
-			// Step 4: Send SQL statement to DBMS
-			try (Statement stmt = conn.createStatement();
-				 ResultSet rs = stmt.executeQuery(sql)) {
-
-				// Step 5: Receive results
-				while (rs.next()) {
-					String flavor = rs.getString("Flavor");
-					String food = rs.getString("Food");
-					float price = rs.getFloat("price");
-					System.out.format("%s %s ($%.2f) %n", flavor, food, price);
-				}
-			}
-
-			// Step 6: (omitted in this example) Commit or rollback transaction
-		}
-		// Step 7: Close connection (handled by try-with-resources syntax)
-	}
-
-
-	// Demo3 - Establish JDBC connection, execute DML query (UPDATE)
-	// -------------------------------------------
-	// Never (ever) write database code like this!
-	// -------------------------------------------
-	private void demo3() throws SQLException {
-
-		System.out.println("demo3: Populate AvailUntil column using string concatenation\r\n");
-
-		// Step 1: Establish connection to RDBMS
-		try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
-				System.getenv("HP_JDBC_USER"),
-				System.getenv("HP_JDBC_PW"))) {
-			// Step 2: Construct SQL statement
-			Scanner scanner = new Scanner(System.in);
-			System.out.print("Enter a flavor: ");
-			String flavor = scanner.nextLine();
-			System.out.format("Until what date will %s be available (YYYY-MM-DD)? ", flavor);
-			String availUntilDate = scanner.nextLine();
-
-			// -------------------------------------------
-			// Never (ever) write database code like this!
-			// -------------------------------------------
-			String updateSql = "UPDATE hp_goods SET AvailUntil = '" + availUntilDate + "' " +
-					"WHERE Flavor = '" + flavor + "'";
-
-			// Step 3: (omitted in this example) Start transaction
-
-			try (Statement stmt = conn.createStatement()) {
-
-				// Step 4: Send SQL statement to DBMS
-				int rowCount = stmt.executeUpdate(updateSql);
-
-				// Step 5: Handle results
-				System.out.format("Updated all '%s' flavored pastries (%d records) %n", flavor, rowCount);
-			}
-
-			// Step 6: (omitted in this example) Commit or rollback transaction
-
-		}
-		// Step 7: Close connection (handled implcitly by try-with-resources syntax)
-	}
-
-
-	// Demo4 - Establish JDBC connection, execute DML query (UPDATE) using PreparedStatement / transaction
-	private void demo4() throws SQLException {
-
-		System.out.println("demo4: Populate AvailUntil column using PreparedStatement\r\n");
-
-		// Step 1: Establish connection to RDBMS
-		try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
-				System.getenv("HP_JDBC_USER"),
-				System.getenv("HP_JDBC_PW"))) {
-			// Step 2: Construct SQL statement
-			Scanner scanner = new Scanner(System.in);
-			System.out.print("Enter a flavor: ");
-			String flavor = scanner.nextLine();
-			System.out.format("Until what date will %s be available (YYYY-MM-DD)? ", flavor);
-			LocalDate availDt = LocalDate.parse(scanner.nextLine());
-
-			String updateSql = "UPDATE hp_goods SET AvailUntil = ? WHERE Flavor = ?";
-
-			// Step 3: Start transaction
-			conn.setAutoCommit(false);
-
-			try (PreparedStatement pstmt = conn.prepareStatement(updateSql)) {
-
-				// Step 4: Send SQL statement to DBMS
-				pstmt.setDate(1, java.sql.Date.valueOf(availDt));
-				pstmt.setString(2, flavor);
-				int rowCount = pstmt.executeUpdate();
-
-				// Step 5: Handle results
-				System.out.format("Updated %d records for %s pastries%n", rowCount, flavor);
-
-				// Step 6: Commit or rollback transaction
-				conn.commit();
-			} catch (SQLException e) {
-				conn.rollback();
-			}
-
-		}
-		// Step 7: Close connection (handled implcitly by try-with-resources syntax)
-	}
-
-
-
-	// Demo5 - Construct a query using PreparedStatement
-	private void demo5() throws SQLException {
-
-		System.out.println("demo5: Run SELECT query using PreparedStatement\r\n");
-
-		// Step 1: Establish connection to RDBMS
-		try (Connection conn = DriverManager.getConnection(System.getenv("HP_JDBC_URL"),
-				System.getenv("HP_JDBC_USER"),
-				System.getenv("HP_JDBC_PW"))) {
-			Scanner scanner = new Scanner(System.in);
-			System.out.print("Find pastries with price <=: ");
-			Double price = Double.valueOf(scanner.nextLine());
-			System.out.print("Filter by flavor (or 'Any'): ");
-			String flavor = scanner.nextLine();
-
-			List<Object> params = new ArrayList<Object>();
-			params.add(price);
-			StringBuilder sb = new StringBuilder("SELECT * FROM goods WHERE price <= ?");
-			if (!"any".equalsIgnoreCase(flavor)) {
-				sb.append(" AND Flavor = ?");
-				params.add(flavor);
-			}
-
-			try (PreparedStatement pstmt = conn.prepareStatement(sb.toString())) {
-				int i = 1;
-				for (Object p : params) {
-					pstmt.setObject(i++, p);
-				}
-
-				try (ResultSet rs = pstmt.executeQuery()) {
-					System.out.println("Matching Pastries:");
-					int matchCount = 0;
-					while (rs.next()) {
-						System.out.format("%s %s ($%.2f) %n", rs.getString("Flavor"), rs.getString("Food"), rs.getDouble("price"));
-						matchCount++;
-					}
-					System.out.format("----------------------%nFound %d match%s %n", matchCount, matchCount == 1 ? "" : "es");
-				}
-			}
-
-		}
 	}
 
 
